@@ -14,15 +14,17 @@ This is also not designed to cheat the system. If you make up experience on your
 
 1. Clone the repository to your system.
 2. Add your master resume to the repository. Include EVERYTHING you've ever done professionally in your field in that master resume.
-3. Replace Zip the repository and upload it to the AI Chatbot of your choice. 
-4. Paste the for the job you want into the chat prompt or upload it as a separate txt (doesn't matter). 
+3. Zip the repository and upload it to the AI chatbot of your choice.
+4. Paste the job description into the chat prompt or upload it as a separate txt file (either works).
 5. Now that the chatbot has the ZIP and the JD, ask the chatbot to use the attached ZIP and enclosed instructions to create your tailored resume
+    NOTE: there's a "resume_preferences.json" file. The chatbot will use that by default, unless you ask it not to.
 6. This is where the "process" ends. You will need to work with the finished resume to perform final edits alongside the chatbot. This is also why you can't use this tool to "cheat the system"; you will still need to do manual work for your resume to impress an actual human.
 
 ## Repository Contents
 
 - `resume_patcher.py`: Deterministic DOCX conversion/patching engine.
-- `resume_preferences.json`: User preference profile for AI generation decisions (tone, bullet density, framing, ATS balance, credibility guardrails).
+- `resume_preferences.json` (optional): User preference profile for AI generation decisions (tone, bullet density, framing, ATS balance, credibility guardrails).
+- `resume_generation_config.example.json` (optional example): AI-layer config pattern showing preference mode selection.
 - `requirements.txt`: Python dependency list for the patcher.
 
 ## App Architecture
@@ -31,12 +33,13 @@ This workflow intentionally separates responsibilities:
 
 1. AI Layer (chatbot):
 - Reads the job description and source resume context.
-- Uses `resume_preferences.json` to guide tailoring choices.
+- Optionally uses `resume_preferences.json` to guide tailoring choices.
 - Produces proposed substitutions/revisions (optionally as structured JSON for review).
+- Creates `replacements.json` before any patching step.
 - Supports human-in-the-loop review before patching.
 
 2. Conversion Layer (`resume_patcher.py`):
-- Applies deterministic section updates to the `.docx`.
+- Applies deterministic document conversion updates to the `.docx`.
 - Preserves paragraph/run formatting and layout style.
 - Outputs a final tailored `.docx`.
 
@@ -44,7 +47,7 @@ This separation keeps generation flexible and context-aware while keeping docume
 
 ## How `resume_preferences.json` Is Used
 
-The preferences file is not consumed directly by `resume_patcher.py`.
+`resume_preferences.json` is optional and is not consumed by `resume_patcher.py`.
 
 Instead, it is used by the AI layer to shape content generation, including:
 
@@ -54,17 +57,29 @@ Instead, it is used by the AI layer to shape content generation, including:
 - Job-title framing guidance.
 - ATS keyword balance with human readability.
 
-In practice: the chatbot should read this file before generating replacements/substitutions.
+In practice: when present, the chatbot should read this file before generating replacements/substitutions and before creating `replacements.json`.
+
+## Preference Modes
+
+Preference mode applies to the AI/chatbot generation layer only:
+
+- `none`: Ignore/omit preferences. Use only the master resume, job description, live user instructions, and general resume best practices.
+- `guided`: Use preferences as soft guidance. This is the recommended default.
+- `strict`: Treat preferences as hard constraints where possible, while preserving factual accuracy and explicit user instructions.
+
+If preferences are missing, the workflow still runs using `none` behavior.
 
 ## What `resume_patcher.py` Does
 
 `resume_patcher.py`:
 
 - Opens a source `.docx` resume.
-- Rewrites specific sections (summary, experience block, and skills rows) with patch content.
+- Applies deterministic text replacements/updates from prepared patch inputs.
 - Preserves style by cloning paragraph/run formatting from template paragraphs in the source document.
 - Handles multi-line paragraph formatting (for header/title + date/location line breaks).
 - Writes the result to a new output `.docx` path.
+
+It should remain a conversion tool only. It should not enforce resume writing rules, tone, strategy, bullet-count policy, or ATS/recruiter optimization logic.
 
 ## Requirements
 
@@ -95,16 +110,22 @@ The script prints `Wrote <output_path>` on success.
 1. Provide the chatbot with:
 - Target job description
 - Source resume `.docx`
-- `resume_preferences.json`
+- Optional `resume_preferences.json`
 
 2. Ask the chatbot to:
 - Propose tailored substitutions aligned with preferences
 - Keep edits truthful and role-relevant
-- Return a reviewed patch plan (or JSON replacement set)
+- Return a reviewed patch plan and `replacements.json`
 
 3. Run `resume_patcher.py` to generate the tailored output `.docx`.
 
 4. Review the final document in Word for content and formatting quality.
+
+## AI Prompt Examples
+
+- "Use the uploaded resume patcher ZIP, but ignore `resume_preferences.json` for this run."
+- "Use `resume_preferences.json` as guided preferences, not hard constraints."
+- "Use `resume_preferences.json` in strict mode. Flag conflicts instead of silently making bad edits."
 
 ## Important Behavior Notes
 

@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "use_preferences_by_default_when_present": true,
+  "preferences_file": "resume_preferences.json",
+  "allow_user_opt_out": true,
+  "user_opt_out_example": "do not use the resume preferences",
+  "fallback_behavior_when_missing": "continue_without_preferences",
+  "notes": {
+    "important": "This config is for the AI/chatbot layer only. resume_patcher.py should not consume this file."
+  }
+}

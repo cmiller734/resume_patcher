@@ -1,5 +1,12 @@
 {
   "schema_version": "1.0",
+  "usage": {
+    "optional": true,
+    "default_behavior": "use_when_present",
+    "user_opt_out_phrase_example": "do not use the resume preferences",
+    "consumed_by": "AI/chatbot layer only",
+    "not_consumed_by": "resume_patcher.py"
+  },
   "profile_name": "Resume Tailoring Preferences",
   "purpose": "Guidance for the AI resume generation layer before creating replacements.json. This file should not be enforced by the DOCX patcher itself.",
   "architecture_principles": {
