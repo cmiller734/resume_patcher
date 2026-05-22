@@ -2,7 +2,7 @@
 
 An AI-assisted resume tailoring workflow that combines chatbot judgment with deterministic DOCX patching.
 
-This repository is designed to be used with an AI chatbot. The chatbot analyzes a target job description and (optionally) generates substitution/replacement content using the user preference profile in `resume_preferences_caleb_miller.json`. Then `resume_patcher.py` performs the document conversion step by applying updates to a source `.docx` while preserving formatting patterns.
+This repository is designed to be used with an AI chatbot. The chatbot analyzes a target job description and (optionally) generates substitution/replacement content using the user preference profile in `resume_preferences.json`. Then `resume_patcher.py` performs the document conversion step by applying updates to a source `.docx` while preserving formatting patterns.
 
 ## Overview
 
@@ -22,7 +22,7 @@ This is also not designed to cheat the system. If you make up experience on your
 ## Repository Contents
 
 - `resume_patcher.py`: Deterministic DOCX conversion/patching engine.
-- `resume_preferences_caleb_miller.json`: User preference profile for AI generation decisions (tone, bullet density, framing, ATS balance, credibility guardrails).
+- `resume_preferences.json`: User preference profile for AI generation decisions (tone, bullet density, framing, ATS balance, credibility guardrails).
 - `requirements.txt`: Python dependency list for the patcher.
 
 ## App Architecture
@@ -31,7 +31,7 @@ This workflow intentionally separates responsibilities:
 
 1. AI Layer (chatbot):
 - Reads the job description and source resume context.
-- Uses `resume_preferences_caleb_miller.json` to guide tailoring choices.
+- Uses `resume_preferences.json` to guide tailoring choices.
 - Produces proposed substitutions/revisions (optionally as structured JSON for review).
 - Supports human-in-the-loop review before patching.
 
@@ -42,7 +42,7 @@ This workflow intentionally separates responsibilities:
 
 This separation keeps generation flexible and context-aware while keeping document transformation repeatable.
 
-## How `resume_preferences_caleb_miller.json` Is Used
+## How `resume_preferences.json` Is Used
 
 The preferences file is not consumed directly by `resume_patcher.py`.
 
@@ -95,7 +95,7 @@ The script prints `Wrote <output_path>` on success.
 1. Provide the chatbot with:
 - Target job description
 - Source resume `.docx`
-- `resume_preferences_caleb_miller.json`
+- `resume_preferences.json`
 
 2. Ask the chatbot to:
 - Propose tailored substitutions aligned with preferences

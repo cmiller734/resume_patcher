@@ -1,6 +1,6 @@
 {
   "schema_version": "1.0",
-  "profile_name": "Caleb Miller Resume Tailoring Preferences",
+  "profile_name": "Resume Tailoring Preferences",
   "purpose": "Guidance for the AI resume generation layer before creating replacements.json. This file should not be enforced by the DOCX patcher itself.",
   "architecture_principles": {
     "separation_of_concerns": "The Python patcher should only perform deterministic document conversion: master_resume.docx + replacements.json -> tailored_resume.docx.",
