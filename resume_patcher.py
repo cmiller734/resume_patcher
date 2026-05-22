@@ -56,25 +56,83 @@ def _copy_run_format(src_run, dst_run) -> None:
         dst_run._r.insert(0, deepcopy(src_run._r.rPr))
 
 
-def set_paragraph_text_keep_format(paragraph: Paragraph, text: str, template: Paragraph | None = None) -> None:
-    """Replace paragraph text while preserving paragraph style and first-run formatting.
+def _template_runs_by_line(template: Paragraph | None) -> list:
+    """Return the first visible run on each visual line of a template paragraph.
 
-    Uses add_break() for embedded newlines so header/date/progression lines stay in one
-    paragraph exactly like the original resume's combined header paragraphs.
+    Word resume headers often keep a role/title and a date/location line in the same
+    paragraph, separated by a line break. The first line may be bold, while the second
+    line may be italic/non-bold. A single copied run cannot preserve that distinction.
+    """
+    if template is None:
+        return []
+
+    line_runs = [None]
+    line_idx = 0
+
+    for run in template.runs:
+        saw_visible_text_on_current_line = False
+
+        for child in run._r.iterchildren():
+            if child.tag == qn("w:t"):
+                value = child.text or ""
+                # Treat non-newline text as the formatting sample for this line.
+                # This intentionally ignores pure break runs.
+                if value.replace("\n", "").strip() and line_runs[line_idx] is None:
+                    line_runs[line_idx] = run
+                    saw_visible_text_on_current_line = True
+            elif child.tag in {qn("w:br"), qn("w:cr")}:
+                line_idx += 1
+                while len(line_runs) <= line_idx:
+                    line_runs.append(None)
+
+        # python-docx sometimes exposes breaks as newlines in run.text even when the
+        # underlying XML has already been handled. This is a conservative fallback.
+        extra_breaks = run.text.count("\n")
+        if extra_breaks and not any(child.tag in {qn("w:br"), qn("w:cr")} for child in run._r.iterchildren()):
+            for _ in range(extra_breaks):
+                line_idx += 1
+                while len(line_runs) <= line_idx:
+                    line_runs.append(None)
+
+    # Fill missing line formats from the nearest previous available run, then first run.
+    fallback = next((r for r in line_runs if r is not None), None)
+    filled = []
+    previous = fallback
+    for r in line_runs:
+        if r is not None:
+            previous = r
+            filled.append(r)
+        else:
+            filled.append(previous)
+    return filled
+
+
+def set_paragraph_text_keep_format(paragraph: Paragraph, text: str, template: Paragraph | None = None) -> None:
+    """Replace paragraph text while preserving paragraph style and per-line run formatting.
+
+    This is line-aware: for embedded newlines, each new line gets the corresponding
+    formatting from the template paragraph instead of inheriting the first run's format.
+    That prevents secondary date/location lines from becoming bold/non-italic.
     """
     template = template or paragraph
-    src_run = template.runs[0] if template is not None and template.runs else (paragraph.runs[0] if paragraph.runs else None)
+    line_format_runs = _template_runs_by_line(template)
+    fallback_run = (template.runs[0] if template is not None and template.runs else
+                    (paragraph.runs[0] if paragraph.runs else None))
 
     # Remove existing runs.
     for run in list(paragraph.runs):
         run._element.getparent().remove(run._element)
 
     parts = text.split("\n")
-    run = paragraph.add_run(parts[0] if parts else "")
-    _copy_run_format(src_run, run)
-    for part in parts[1:]:
-        run.add_break()
-        run.add_text(part)
+    previous_run = None
+    for i, part in enumerate(parts):
+        if i > 0 and previous_run is not None:
+            previous_run.add_break()
+
+        run = paragraph.add_run(part)
+        src_run = line_format_runs[i] if i < len(line_format_runs) and line_format_runs[i] is not None else fallback_run
+        _copy_run_format(src_run, run)
+        previous_run = run
 
 
 def insert_paragraph_after(paragraph: Paragraph, text: str, template: Paragraph) -> Paragraph:
@@ -156,7 +214,8 @@ def main() -> None:
     doc = Document(str(src))
 
     # Source style templates from the original document.
-    normal_template = doc.paragraphs[9]   # role/header paragraph style/run formatting
+    # The role/header template must be a title/date paragraph, not a bullet.
+    normal_template = doc.paragraphs[8]   # role/header paragraph style/run formatting
     bullet_template = doc.paragraphs[10]  # list paragraph bullet style/run formatting
 
     # SUMMARY
