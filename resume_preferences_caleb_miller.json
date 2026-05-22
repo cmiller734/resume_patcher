@@ -1,0 +1,72 @@
+{
+  "schema_version": "1.0",
+  "profile_name": "Caleb Miller Resume Tailoring Preferences",
+  "purpose": "Guidance for the AI resume generation layer before creating replacements.json. This file should not be enforced by the DOCX patcher itself.",
+  "architecture_principles": {
+    "separation_of_concerns": "The Python patcher should only perform deterministic document conversion: master_resume.docx + replacements.json -> tailored_resume.docx.",
+    "ai_layer_role": "The AI/chatbot layer should make context-aware tailoring decisions using the job description, master resume, user preferences, and human-reader strategy before generating replacements.json.",
+    "human_reader_priority": "Optimize for real recruiters and hiring managers reading the resume before interviews, not only ATS keyword matching.",
+    "chatbot_core": "The SaaS product should keep a chatbot-style experience at its center because resume tailoring requires collaborative judgment, tradeoff discussion, and dynamic context awareness."
+  },
+  "global_resume_preferences": {
+    "tone": [
+      "senior",
+      "specific",
+      "credible",
+      "direct",
+      "human-readable"
+    ],
+    "avoid": [
+      "generic AI-sounding language",
+      "buzzword stuffing",
+      "vague collaboration filler",
+      "overly broad claims",
+      "inflated or unverifiable accomplishments",
+      "flattening strong technical texture into bland corporate language"
+    ],
+    "prioritize": [
+      "STAR-style substance where possible",
+      "clear scope of ownership",
+      "technical specificity",
+      "customer or business impact",
+      "implementation ownership",
+      "root cause analysis and problem-solving",
+      "evidence that a human recruiter can understand quickly"
+    ]
+  },
+  "bullet_preferences": {
+    "max_bullets_per_role_preference": 10,
+    "note": "This is a user preference for AI generation, not a hard validation rule for the Python patcher.",
+    "preferred_recent_role_range": "5-8 bullets when the role is highly relevant",
+    "preferred_older_role_range": "1-4 bullets depending on relevance",
+    "guidance": "More than 10 bullets for a single experience is usually frustrating for recruiters. Use fewer, stronger bullets unless a master resume or special case requires more detail."
+  },
+  "job_title_strategy": {
+    "allow_functional_translation_when_truthful": true,
+    "guidance": "Functional title translation is acceptable when it accurately reflects the work and does not create a misleading employment history.",
+    "avoid_exact_role_title_copying_when_it_feels_too_convenient": true,
+    "example": "For Apica, 'Implementation Engineer' may be more useful and still credible than 'Professional Services Engineer' for implementation-focused roles. Avoid copying the exact target title if it feels fabricated."
+  },
+  "content_strategy": {
+    "summary": "Make the hiring manager think this person could be a fit quickly; do not overload it with buzzwords.",
+    "skills": "Tailor skill categories to the role while staying accurate. Include adjacent keywords only when defensible.",
+    "experience": "Lead with the most relevant experience for the target role, but preserve credibility and chronology.",
+    "older_roles": "Compress older roles aggressively when they do not support the target role.",
+    "cover_letters": "Use cover letters to explain motivation, fit, and unusual alignment rather than restating the resume."
+  },
+  "default_positioning": {
+    "primary_lane": "Technical/Application Support, Implementation, Professional Services, and customer-facing SaaS systems work.",
+    "secondary_lane": "WordPress/WooCommerce and custom web systems should be framed as implementation, product operations, troubleshooting, and workflow ownership when appropriate, not merely coding.",
+    "preferred_framing": "Support Engineer+ / implementation-focused technical operator who can bridge customers, systems, and engineering."
+  },
+  "ats_strategy": {
+    "include_relevant_keywords": true,
+    "guidance": "Use role-relevant keywords naturally in summary, skills, and bullets. Do not sacrifice human credibility for exact keyword stuffing.",
+    "exact_title_matching": "Can help, but should be balanced against human smell-test risk."
+  },
+  "output_expectations": {
+    "docx_formatting": "Preserve the master resume's formatting and structure as closely as possible.",
+    "json_generation": "Generate clean replacements.json that the patcher can apply deterministically.",
+    "review_step": "Render-check the DOCX when possible before delivery."
+  }
+}
