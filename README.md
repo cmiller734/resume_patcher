@@ -13,18 +13,17 @@ This is also not designed to cheat the system. If you make up experience on your
 ## How To Use
 
 1. Clone the repository to your system.
-2. Add your master resume to the repository. Include EVERYTHING you've ever done professionally in your field in that master resume.
+2. Add your master resume to the repository. Include everything relevant you have done professionally in your field in that master resume.
 3. Zip the repository and upload it to the AI chatbot of your choice.
-4. Paste the job description into the chat prompt or upload it as a separate txt file (either works).
-5. Now that the chatbot has the ZIP and the JD, ask the chatbot to use the attached ZIP and enclosed instructions to create your tailored resume
-    NOTE: there's a "resume_preferences.json" file. The chatbot will use that by default, unless you ask it not to.
-6. This is where the "process" ends. You will need to work with the finished resume to perform final edits alongside the chatbot. This is also why you can't use this tool to "cheat the system"; you will still need to do manual work for your resume to impress an actual human.
+4. Paste the job description into the chat prompt or upload it as a separate `.txt` file.
+5. Ask the chatbot to use the attached ZIP and enclosed instructions to create your tailored resume.
+   - Note: if `resume_preferences.json` is present, the chatbot should use it by default unless you ask it not to.
+6. Work with the finished resume and the chatbot to perform final edits. This tool does not eliminate human judgment or final review; the resume still needs to impress an actual human.
 
 ## Repository Contents
 
 - `resume_patcher.py`: Deterministic DOCX conversion/patching engine.
 - `resume_preferences.json` (optional): User preference profile for AI generation decisions (tone, bullet density, framing, ATS balance, credibility guardrails).
-- `resume_generation_config.example.json` (optional example): AI-layer config pattern showing preference mode selection.
 - `requirements.txt`: Python dependency list for the patcher.
 
 ## App Architecture
@@ -33,7 +32,7 @@ This workflow intentionally separates responsibilities:
 
 1. AI Layer (chatbot):
 - Reads the job description and source resume context.
-- Optionally uses `resume_preferences.json` to guide tailoring choices.
+- Uses `resume_preferences.json` by default when present, unless the user asks to ignore it for that run.
 - Produces proposed substitutions/revisions (optionally as structured JSON for review).
 - Creates `replacements.json` before any patching step.
 - Supports human-in-the-loop review before patching.
@@ -45,29 +44,15 @@ This workflow intentionally separates responsibilities:
 
 This separation keeps generation flexible and context-aware while keeping document transformation repeatable.
 
-## How `resume_preferences.json` Is Used
+## Optional Resume Preferences
 
-`resume_preferences.json` is optional and is not consumed by `resume_patcher.py`.
+`resume_preferences.json` is optional.
 
-Instead, it is used by the AI layer to shape content generation, including:
-
-- Voice/tone constraints (specific, credible, senior, non-generic).
-- Content priorities (implementation ownership, troubleshooting depth, customer/business impact).
-- Bullet density and relevance strategy.
-- Job-title framing guidance.
-- ATS keyword balance with human readability.
-
-In practice: when present, the chatbot should read this file before generating replacements/substitutions and before creating `replacements.json`.
-
-## Preference Modes
-
-Preference mode applies to the AI/chatbot generation layer only:
-
-- `none`: Ignore/omit preferences. Use only the master resume, job description, live user instructions, and general resume best practices.
-- `guided`: Use preferences as soft guidance. This is the recommended default.
-- `strict`: Treat preferences as hard constraints where possible, while preserving factual accuracy and explicit user instructions.
-
-If preferences are missing, the workflow still runs using `none` behavior.
+- If present, the chatbot should use it by default when generating tailored content.
+- To skip it, simply say: "Ignore `resume_preferences.json` for this run."
+- The file guides chatbot content decisions before `replacements.json` is created.
+- `resume_preferences.json` is not consumed by `resume_patcher.py`.
+- No preference modes or config file are required.
 
 ## What `resume_patcher.py` Does
 
@@ -113,7 +98,7 @@ The script prints `Wrote <output_path>` on success.
 - Optional `resume_preferences.json`
 
 2. Ask the chatbot to:
-- Propose tailored substitutions aligned with preferences
+- Propose tailored substitutions aligned with your request
 - Keep edits truthful and role-relevant
 - Return a reviewed patch plan and `replacements.json`
 
@@ -124,8 +109,7 @@ The script prints `Wrote <output_path>` on success.
 ## AI Prompt Examples
 
 - "Use the uploaded resume patcher ZIP, but ignore `resume_preferences.json` for this run."
-- "Use `resume_preferences.json` as guided preferences, not hard constraints."
-- "Use `resume_preferences.json` in strict mode. Flag conflicts instead of silently making bad edits."
+- "Use the uploaded files and create the tailored resume for this JD."
 
 ## Important Behavior Notes
 
