@@ -2,7 +2,7 @@
 
 An AI-assisted resume tailoring workflow that combines chatbot judgment with deterministic DOCX patching.
 
-This repository is designed to be used with an AI chatbot. The chatbot analyzes a target job description and (optionally) generates substitution/replacement content using the user preference profile in `resume_preferences.json`. Then `resume_patcher.py` performs the document conversion step by applying updates to a source `.docx` while preserving formatting patterns.
+This repository is designed to be used with an AI chatbot. The chatbot analyzes a target job description and generates substitution/replacement content. If `resume_preferences.json` is present, the chatbot uses it by default unless the user asks not to. Then `resume_patcher.py` performs the document conversion step by applying updates to a source `.docx` while preserving formatting patterns.
 
 ## Overview
 
