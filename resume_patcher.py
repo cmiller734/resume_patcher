@@ -3,7 +3,7 @@
 resume_patch_docx_workhorse_linebreaks.py
 
 Patch an existing DOCX resume in-place-style rather than rebuilding from scratch.
-Designed for Caleb's resume workflow:
+Designed for the following resume workflow:
 - preserve the source document's section/layout feel
 - replace targeted paragraph blocks by anchor text
 - preserve run formatting and paragraph styles
@@ -20,13 +20,34 @@ from typing import Iterable, List, Sequence
 from docx import Document
 from docx.text.paragraph import Paragraph
 
+from docx.shared import Inches
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+
 
 @dataclass(frozen=True)
 class PatchPara:
     text: str
     style_source: str = "normal"  # normal | bullet | keep
 
+def apply_resume_bullet_indent(paragraph):
+    """
+    Apply Caleb resume bullet spacing:
+    - bullet marker around 0.25"
+    - bullet text around 0.5"
+    """
+    paragraph.paragraph_format.left_indent = Inches(0.5)
+    paragraph.paragraph_format.first_line_indent = Inches(-0.25)
 
+    pPr = paragraph._p.get_or_add_pPr()
+    ind = pPr.find(qn("w:ind"))
+    if ind is None:
+        ind = OxmlElement("w:ind")
+        pPr.append(ind)
+
+    ind.set(qn("w:left"), "720")     # 0.5"
+    ind.set(qn("w:hanging"), "360")  # 0.25"
+    
 def _copy_run_format(src_run, dst_run) -> None:
     """Copy formatting from src_run to dst_run without copying text."""
     if src_run is None:
@@ -125,7 +146,7 @@ def replace_block(doc: Document, start_idx: int, end_idx_exclusive: int, items: 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Patch Caleb Miller resume DOCX while preserving formatting.")
+    parser = argparse.ArgumentParser(description="Patch  resume DOCX while preserving formatting.")
     parser.add_argument("--src", required=True, help="Source DOCX resume")
     parser.add_argument("--out", required=True, help="Output DOCX path")
     args = parser.parse_args()
