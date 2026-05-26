@@ -43,18 +43,22 @@
       "root cause analysis and problem-solving",
       "evidence that a human recruiter can understand quickly",
       "using 'Additional Web Development Experience' section instead of individual roles prior to Apica",
-      "allocating the most resume space to the strongest role-relevant evidence, not automatically to the most recent role",
-      "collapsing early-career roles into Additional Web Development Experience for SaaS support, application support, implementation, and professional services roles"
+      "preserving Apica role progression under a grouped employer header for SaaS support, application support, implementation, and professional services roles",
+      "strategic space allocation based on role relevance rather than a fixed bullet-count rule"
     ]
   },
   "bullet_preferences": {
-    "max_bullets_per_role_preference": 9,
-    "note": "This is a user preference for AI generation, not a hard validation rule for the Python patcher.",
-    "preferred_recent_role_range": "5-8 bullets when the role is highly relevant",
-    "preferred_older_role_range": "1-4 bullets depending on relevance",
-    "guidance": "More than 10 bullets for a single experience is usually frustrating for recruiters. Use fewer, stronger bullets unless a master resume or special case requires more detail.",
-    "role_cluster_guidance": "When multiple positions at the same company form the primary evidence for the target role, treat the company cluster as the main experience block and allow it to receive the largest share of resume space, while still keeping bullets lean and readable.",
-    "early_role_space_limit": "For roles prior to Apica, default to a compact Additional Web Development Experience section rather than separate full entries unless the target job is specifically web development, WordPress/WooCommerce, PHP, JavaScript, or software engineering."
+    "fixed_max_bullets_rule": false,
+    "note": "Bullet counts are guidance for the AI generation layer, not hard validation rules for the Python patcher.",
+    "guidance": "Use as many bullets as the resume strategy requires, while keeping the final resume readable and human-scannable. Avoid forcing compression solely to satisfy an arbitrary maximum.",
+    "preferred_recent_role_range": "Usually 4-8 bullets when the role is relevant, but allow more when a single role is the primary proof for the target job.",
+    "preferred_older_role_range": "Usually 0-3 bullets depending on relevance; collapse or remove details when older roles do not materially support the target job.",
+    "space_priority": "Allocate resume space to the experience that best proves fit for the target role. Do not preserve low-value older-role bullets at the expense of highly relevant Apica or recent technical work.",
+    "avoid": [
+      "compressing highly relevant experience into an unclear mega-block just to reduce bullet count",
+      "spending significant space on early-career roles when they are not important to the target role",
+      "treating any numeric bullet range as a hard rule"
+    ]
   },
   "job_title_strategy": {
     "allow_functional_translation_when_truthful": true,
@@ -65,25 +69,11 @@
   "content_strategy": {
     "summary": "Make the hiring manager think this person could be a fit quickly; do not overload it with buzzwords.",
     "skills": "Tailor skill categories to the role while staying accurate. Include adjacent keywords only when defensible.",
-    "experience": "Lead with the most relevant experience for the target role, but make the ordering visibly intentional with clear section headings such as Relevant Enterprise SaaS Experience and Recent Contract & Technical Project Work when not using strict reverse chronology.",
-    "older_roles": "Compress older roles aggressively when they do not support the target role. For SaaS support, application support, customer support engineering, implementation, professional services, or escalation-focused roles, pre-Apica roles should normally be collapsed into Additional Web Development Experience rather than shown as individual full entries.",
+    "experience": "Lead with the most relevant experience for the target role, but preserve credibility, chronology, progression, and current activity. Avoid merging role progressions when the progression itself is a selling point.",
+    "older_roles": "Compress older roles aggressively when they do not support the target role, usually into Additional Web Development Experience rather than individual full entries.",
     "cover_letters": "Use cover letters to explain motivation, fit, and unusual alignment rather than restating the resume.",
-    "recent_work": "Account for current Pearl/Freelance/Subscription Everything work near the top when useful, but do not let it displace stronger Apica evidence for enterprise SaaS support or application support roles.",
-    "space_allocation": {
-      "primary_relevant_experience": "Give the most role-relevant experience the majority of resume space, even if that requires compressing older roles.",
-      "apica_for_saas_support_roles": "For SaaS technical support, application support, customer support engineering, implementation, professional services, or escalation-focused roles, Apica should receive the most detail.",
-      "recent_contract_work": "Recent contract and technical project work should answer what the candidate has been doing lately, but usually in a compact supporting section unless it is the strongest match for the JD.",
-      "early_career_roles": "Early web/development roles should usually be compressed into Additional Web Development Experience and should not appear as several separate blocks unless directly relevant."
-    },
-    "sectioning_strategy": {
-      "relevance_first_allowed": true,
-      "non_chronological_requirement": "When using relevance-first ordering, make the structure clear through section labels so the reader understands the resume is intentionally organized rather than accidentally out of order.",
-      "recommended_for_saas_support": [
-        "Relevant Enterprise SaaS Experience",
-        "Recent Contract & Technical Project Work",
-        "Additional Web Development Experience"
-      ]
-    }
+    "apica": "For primary-lane SaaS support/application support/implementation roles, preserve Apica as a grouped employer with individual role progression unless the user explicitly requests a compressed format.",
+    "recent_work": "Use recent Pearl/Freelance work to answer what the user has been doing lately, but keep it compact when Apica is the stronger target-role proof."
   },
   "default_positioning": {
     "primary_lane": "Technical/Application Support, Implementation, Professional Services, and customer-facing SaaS systems work.",
@@ -99,6 +89,36 @@
     "docx_formatting": "Preserve the master resume's formatting and structure as closely as possible.",
     "json_generation": "Generate clean replacements.json that the patcher can apply deterministically.",
     "review_step": "Render-check the DOCX when possible before delivery.",
-    "structure_preservation_exception": "Preserve formatting and visual style, but do not preserve a low-value full role list when the preferences call for compacting older roles. Formatting preservation should not override role-relevance space allocation."
+    "strategic_structure": "Formatting preservation matters, but should not override role-relevant structure such as grouped Apica progression or compact older-role handling."
+  },
+  "experience_structure_strategy": {
+    "avoid_overcorrection": "Do not solve one structural problem by creating another. Preserve the strongest human-reader signals: relevance, chronology, progression, and current activity.",
+    "apica_grouped_progression": {
+      "default_for_primary_lane_roles": "For Technical Support, Application Support, Customer Support Engineering, Professional Services, Implementation, and customer-facing SaaS systems roles, do not compress Apica into one undifferentiated role.",
+      "preferred_structure": "Use a grouped Apica employer header showing total tenure and progression, then keep Professional Services Engineer, Senior Technical Support Engineer, and Technical Support Engineer as separate role entries underneath.",
+      "gold_header_purpose": "The grouped Apica header should communicate 6 years of enterprise SaaS support/professional services experience and internal progression without replacing the individual role entries.",
+      "role_progression_priority": "Preserve the user's progression at Apica because it is a major credibility signal.",
+      "bullet_distribution": "Distribute bullets by relevance to the target job. For SaaS support roles, Senior Technical Support Engineer and Professional Services Engineer usually deserve the most detail; Technical Support Engineer should usually be shorter but still present.",
+      "do_not": "Do not merge all Apica experience into one large block unless the user explicitly asks for a compressed one-company format."
+    },
+    "recent_contract_work": {
+      "purpose": "Answer the human-reader question of what the user has been doing lately.",
+      "guidance": "Keep Pearl/Freelance/Subscription Everything visible and credible, but usually compact for SaaS support roles unless the target job strongly rewards WordPress, WooCommerce, web development, product operations, or plugin troubleshooting.",
+      "do_not": "Do not let current contract work hijack the resume narrative away from the primary lane when Apica is more relevant."
+    },
+    "older_roles": {
+      "default_handling": "Collapse pre-Apica roles into a compact Additional Web Development Experience section unless the target role specifically rewards early web development, WordPress, PHP, JavaScript, C#/.NET, or software engineering experience.",
+      "individual_role_exception": "Keep an early role as an individual entry only when it directly supports the target role or provides unusually strong keyword/credibility alignment.",
+      "space_priority": "Early-career roles should not consume significant page space when Apica or recent technical work is more relevant.",
+      "preferred_format": "Use compact company/title/date lines, optionally with one short combined description if useful."
+    },
+    "default_ordering_for_primary_lane_roles": [
+      "Summary",
+      "Skills",
+      "Relevant Enterprise SaaS Experience with grouped Apica header and individual Apica role progression",
+      "Recent Contract & Technical Project Work",
+      "Additional Web Development Experience",
+      "Education"
+    ]
   }
 }
