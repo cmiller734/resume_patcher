@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "usage": {
     "optional": true,
     "default_behavior": "use_by_default_when_present_unless_user_opts_out",
@@ -13,7 +13,8 @@
     "separation_of_concerns": "The Python patcher should only perform deterministic document conversion: master_resume.docx + replacements.json -> tailored_resume.docx.",
     "ai_layer_role": "The AI/chatbot layer should make context-aware tailoring decisions using the job description, master resume, user preferences, and human-reader strategy before generating replacements.json.",
     "human_reader_priority": "Optimize for real recruiters and hiring managers reading the resume before interviews, not only ATS keyword matching.",
-    "chatbot_core": "The SaaS product should keep a chatbot-style experience at its center because resume tailoring requires collaborative judgment, tradeoff discussion, and dynamic context awareness."
+    "chatbot_core": "The SaaS product should keep a chatbot-style experience at its center because resume tailoring requires collaborative judgment, tradeoff discussion, and dynamic context awareness.",
+    "explicit_usage_of_python_script": "Always use the attached resume_patcher.py script for DOCX generation to ensure consistent formatting and avoid manual errors. Do not bypass the script by manually editing DOCX files."
   },
   "global_resume_preferences": {
     "tone": [
@@ -29,7 +30,9 @@
       "vague collaboration filler",
       "overly broad claims",
       "inflated or unverifiable accomplishments",
-      "flattening strong technical texture into bland corporate language"
+      "flattening strong technical texture into bland corporate language",
+      "non-standard job titles that feel fabricated, such as 'Technical Implementation & Application Support Consultant' instead of 'Implementation Engineer' or 'Web Developer'",
+      "changing job titles for the sake of keyword matching when it creates a misleading employment history or feels like a fabrication"
     ],
     "prioritize": [
       "STAR-style substance where possible",
@@ -38,15 +41,20 @@
       "customer or business impact",
       "implementation ownership",
       "root cause analysis and problem-solving",
-      "evidence that a human recruiter can understand quickly"
+      "evidence that a human recruiter can understand quickly",
+      "using 'Additional Web Development Experience' section instead of individual roles prior to Apica",
+      "allocating the most resume space to the strongest role-relevant evidence, not automatically to the most recent role",
+      "collapsing early-career roles into Additional Web Development Experience for SaaS support, application support, implementation, and professional services roles"
     ]
   },
   "bullet_preferences": {
-    "max_bullets_per_role_preference": 10,
+    "max_bullets_per_role_preference": 9,
     "note": "This is a user preference for AI generation, not a hard validation rule for the Python patcher.",
     "preferred_recent_role_range": "5-8 bullets when the role is highly relevant",
     "preferred_older_role_range": "1-4 bullets depending on relevance",
-    "guidance": "More than 10 bullets for a single experience is usually frustrating for recruiters. Use fewer, stronger bullets unless a master resume or special case requires more detail."
+    "guidance": "More than 10 bullets for a single experience is usually frustrating for recruiters. Use fewer, stronger bullets unless a master resume or special case requires more detail.",
+    "role_cluster_guidance": "When multiple positions at the same company form the primary evidence for the target role, treat the company cluster as the main experience block and allow it to receive the largest share of resume space, while still keeping bullets lean and readable.",
+    "early_role_space_limit": "For roles prior to Apica, default to a compact Additional Web Development Experience section rather than separate full entries unless the target job is specifically web development, WordPress/WooCommerce, PHP, JavaScript, or software engineering."
   },
   "job_title_strategy": {
     "allow_functional_translation_when_truthful": true,
@@ -57,9 +65,25 @@
   "content_strategy": {
     "summary": "Make the hiring manager think this person could be a fit quickly; do not overload it with buzzwords.",
     "skills": "Tailor skill categories to the role while staying accurate. Include adjacent keywords only when defensible.",
-    "experience": "Lead with the most relevant experience for the target role, but preserve credibility and chronology.",
-    "older_roles": "Compress older roles aggressively when they do not support the target role.",
-    "cover_letters": "Use cover letters to explain motivation, fit, and unusual alignment rather than restating the resume."
+    "experience": "Lead with the most relevant experience for the target role, but make the ordering visibly intentional with clear section headings such as Relevant Enterprise SaaS Experience and Recent Contract & Technical Project Work when not using strict reverse chronology.",
+    "older_roles": "Compress older roles aggressively when they do not support the target role. For SaaS support, application support, customer support engineering, implementation, professional services, or escalation-focused roles, pre-Apica roles should normally be collapsed into Additional Web Development Experience rather than shown as individual full entries.",
+    "cover_letters": "Use cover letters to explain motivation, fit, and unusual alignment rather than restating the resume.",
+    "recent_work": "Account for current Pearl/Freelance/Subscription Everything work near the top when useful, but do not let it displace stronger Apica evidence for enterprise SaaS support or application support roles.",
+    "space_allocation": {
+      "primary_relevant_experience": "Give the most role-relevant experience the majority of resume space, even if that requires compressing older roles.",
+      "apica_for_saas_support_roles": "For SaaS technical support, application support, customer support engineering, implementation, professional services, or escalation-focused roles, Apica should receive the most detail.",
+      "recent_contract_work": "Recent contract and technical project work should answer what the candidate has been doing lately, but usually in a compact supporting section unless it is the strongest match for the JD.",
+      "early_career_roles": "Early web/development roles should usually be compressed into Additional Web Development Experience and should not appear as several separate blocks unless directly relevant."
+    },
+    "sectioning_strategy": {
+      "relevance_first_allowed": true,
+      "non_chronological_requirement": "When using relevance-first ordering, make the structure clear through section labels so the reader understands the resume is intentionally organized rather than accidentally out of order.",
+      "recommended_for_saas_support": [
+        "Relevant Enterprise SaaS Experience",
+        "Recent Contract & Technical Project Work",
+        "Additional Web Development Experience"
+      ]
+    }
   },
   "default_positioning": {
     "primary_lane": "Technical/Application Support, Implementation, Professional Services, and customer-facing SaaS systems work.",
@@ -74,6 +98,7 @@
   "output_expectations": {
     "docx_formatting": "Preserve the master resume's formatting and structure as closely as possible.",
     "json_generation": "Generate clean replacements.json that the patcher can apply deterministically.",
-    "review_step": "Render-check the DOCX when possible before delivery."
+    "review_step": "Render-check the DOCX when possible before delivery.",
+    "structure_preservation_exception": "Preserve formatting and visual style, but do not preserve a low-value full role list when the preferences call for compacting older roles. Formatting preservation should not override role-relevance space allocation."
   }
 }
