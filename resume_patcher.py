@@ -25,12 +25,45 @@ from docx.text.paragraph import Paragraph
 
 
 BULLET_PREFIX_RE = re.compile(r"^\s*(?:\u2022|-|\*)\s+")
+DATE_TOKEN_RE = re.compile(
+    r"\b(?:jan\.?|january|feb\.?|february|mar\.?|march|apr\.?|april|may|jun\.?|june|"
+    r"jul\.?|july|aug\.?|august|sep\.?|sept\.?|september|oct\.?|october|nov\.?|"
+    r"november|dec\.?|december|present|\d{4})\b",
+    re.IGNORECASE,
+)
+LOCATION_TOKEN_RE = re.compile(
+    r"\b(?:remote|hybrid|onsite|on-site|[A-Z][a-z]+,\s*[A-Z]{2}|[A-Z]{2}\s*/\s*remote)\b",
+    re.IGNORECASE,
+)
+
+SUPPORTED_STYLE_SOURCES = {
+    "section_heading",
+    "role_heading",
+    "company_heading",
+    "date_location",
+    "normal",
+    "bullet",
+    "keep",
+}
+NON_SECTION_STYLE_SOURCES = {"normal", "role_heading", "company_heading", "date_location"}
+ROLE_KEYWORDS = (
+    "engineer",
+    "developer",
+    "architect",
+    "consultant",
+    "support",
+    "services",
+    "founder",
+    "lead",
+    "manager",
+    "intern",
+)
 
 
 @dataclass(frozen=True)
 class PatchPara:
     text: str
-    style_source: str = "normal"  # normal | bullet | keep
+    style_source: str = "normal"
 
 
 def warn(message: str) -> None:
@@ -166,8 +199,7 @@ def replace_block(
     end_idx_exclusive: int,
     items: Sequence[PatchPara],
     *,
-    normal_template: Paragraph,
-    bullet_template: Paragraph,
+    style_templates: dict[str, Paragraph],
 ) -> None:
     """Replace a paragraph block [start_idx, end_idx_exclusive) with items."""
     if not items:
@@ -176,15 +208,44 @@ def replace_block(
     first = doc.paragraphs[start_idx]
     end_anchor = doc.paragraphs[end_idx_exclusive]._p
 
-    normal_template_xml = deepcopy(normal_template._p)
-    bullet_template_xml = deepcopy(bullet_template._p)
+    template_xml_by_style = {
+        style_source: deepcopy(template._p)
+        for style_source, template in style_templates.items()
+    }
+    template_style_name_by_style = {
+        style_source: paragraph_style_name(template)
+        for style_source, template in style_templates.items()
+    }
 
     def make_template(style_source: str, current: Paragraph | None = None) -> Paragraph:
-        if style_source == "bullet":
-            return Paragraph(deepcopy(bullet_template_xml), first._parent)
-        if style_source == "normal":
-            return Paragraph(deepcopy(normal_template_xml), first._parent)
-        return current or Paragraph(deepcopy(normal_template_xml), first._parent)
+        if style_source == "keep":
+            return current or Paragraph(deepcopy(template_xml_by_style["normal"]), first._parent)
+
+        def safe_normal_template() -> Paragraph:
+            fallback = Paragraph(deepcopy(template_xml_by_style["normal"]), first._parent)
+            if paragraph_is_heading_1(fallback):
+                warn("safe 'normal' fallback resolved to Heading 1; forcing Word Normal style")
+                fallback.style = "Normal"
+            return fallback
+
+        if style_source not in template_xml_by_style:
+            warn(f"style {style_source!r} is not available; using 'normal'")
+            style_source = "normal"
+
+        template = Paragraph(deepcopy(template_xml_by_style[style_source]), first._parent)
+        if style_source in NON_SECTION_STYLE_SOURCES and paragraph_is_heading_1(template):
+            warn(
+                f"refusing to apply Heading 1 template to {style_source!r}; "
+                "using safe 'normal' template"
+            )
+            template = safe_normal_template()
+        elif style_source in NON_SECTION_STYLE_SOURCES and "heading 1" in template_style_name_by_style.get(style_source, "").lower():
+            warn(
+                f"refusing to apply Heading 1 template to {style_source!r}; "
+                "using safe 'normal' template"
+            )
+            template = safe_normal_template()
+        return template
 
     first.style = make_template(items[0].style_source, first).style
     set_paragraph_text_keep_format(first, items[0].text, make_template(items[0].style_source, first))
@@ -201,7 +262,40 @@ def paragraph_is_bullet(paragraph: Paragraph) -> bool:
     pPr = paragraph._p.pPr
     if pPr is not None and pPr.numPr is not None:
         return True
+    style_name = (paragraph.style.name if paragraph.style is not None else "").lower()
+    if "bullet" in style_name:
+        return True
     return bool(BULLET_PREFIX_RE.match(paragraph.text))
+
+
+def paragraph_style_name(paragraph: Paragraph) -> str:
+    return paragraph.style.name if paragraph.style is not None else ""
+
+
+def paragraph_style_id(paragraph: Paragraph) -> str:
+    return paragraph.style.style_id if paragraph.style is not None else ""
+
+
+def paragraph_has_heading_level(paragraph: Paragraph, level: int) -> bool:
+    style_name = paragraph_style_name(paragraph).lower().replace(" ", "")
+    style_id = paragraph_style_id(paragraph).lower().replace(" ", "")
+    return style_name == f"heading{level}" or style_id == f"heading{level}"
+
+
+def paragraph_is_heading_1(paragraph: Paragraph) -> bool:
+    return paragraph_has_heading_level(paragraph, 1)
+
+
+def paragraph_is_any_heading(paragraph: Paragraph) -> bool:
+    style_name = paragraph_style_name(paragraph).lower()
+    style_id = paragraph_style_id(paragraph).lower()
+    return "heading" in style_name or style_id.startswith("heading")
+
+
+def paragraph_is_document_title_style(paragraph: Paragraph) -> bool:
+    style_name = paragraph_style_name(paragraph).lower()
+    style_id = paragraph_style_id(paragraph).lower()
+    return style_name in {"title", "subtitle"} or style_id in {"title", "subtitle"}
 
 
 def paragraph_looks_like_section_heading(paragraph: Paragraph) -> bool:
@@ -209,12 +303,45 @@ def paragraph_looks_like_section_heading(paragraph: Paragraph) -> bool:
     if not text:
         return False
 
-    style_name = (paragraph.style.name if paragraph.style is not None else "").lower()
-    if "heading" in style_name:
+    if paragraph_is_any_heading(paragraph) and paragraph_has_heading_level(paragraph, 1):
         return True
 
     has_letters = any(ch.isalpha() for ch in text)
     return has_letters and text.upper() == text and len(text) <= 80
+
+
+def paragraph_looks_like_date_location(paragraph: Paragraph) -> bool:
+    text = paragraph.text.strip()
+    if not text or paragraph_is_bullet(paragraph) or paragraph_looks_like_section_heading(paragraph):
+        return False
+    if len(text) > 90:
+        return False
+    if any(word in text.lower() for word in ROLE_KEYWORDS):
+        return False
+    has_date = DATE_TOKEN_RE.search(text) is not None
+    has_location = LOCATION_TOKEN_RE.search(text) is not None
+    return has_date and (has_location or "|" in text or " - " in text or " – " in text)
+
+
+def paragraph_looks_like_company_heading(paragraph: Paragraph) -> bool:
+    text = paragraph.text.strip()
+    if not text or paragraph_is_bullet(paragraph) or paragraph_looks_like_section_heading(paragraph):
+        return False
+    if paragraph_has_heading_level(paragraph, 2):
+        return True
+    if DATE_TOKEN_RE.search(text):
+        return False
+    return " | " in text or " – " in text or " - " in text
+
+
+def paragraph_looks_like_role_heading(paragraph: Paragraph) -> bool:
+    text = paragraph.text.strip()
+    if not text or paragraph_is_bullet(paragraph) or paragraph_looks_like_section_heading(paragraph):
+        return False
+    if paragraph_has_heading_level(paragraph, 3):
+        return True
+    lowered = text.lower()
+    return any(word in lowered for word in ROLE_KEYWORDS) and DATE_TOKEN_RE.search(text) is not None
 
 
 def first_non_empty_paragraph(doc: Document) -> Paragraph:
@@ -224,32 +351,80 @@ def first_non_empty_paragraph(doc: Document) -> Paragraph:
     return doc.paragraphs[0]
 
 
-def resolve_block_templates(doc: Document, start_idx: int, end_idx_exclusive: int) -> tuple[Paragraph, Paragraph]:
-    normal_template = doc.paragraphs[start_idx]
-    if not normal_template.text.strip():
-        for i in range(start_idx + 1, min(end_idx_exclusive + 1, len(doc.paragraphs))):
-            if doc.paragraphs[i].text.strip():
-                normal_template = doc.paragraphs[i]
-                break
-        else:
-            normal_template = first_non_empty_paragraph(doc)
+def first_matching_paragraph(doc: Document, predicate) -> Paragraph | None:
+    for p in doc.paragraphs:
+        if p.text.strip() and predicate(p):
+            return p
+    return None
 
-    bullet_template = None
-    for i in range(start_idx, min(end_idx_exclusive, len(doc.paragraphs))):
-        if paragraph_is_bullet(doc.paragraphs[i]) and doc.paragraphs[i].text.strip():
-            bullet_template = doc.paragraphs[i]
-            break
 
-    if bullet_template is None:
-        for p in doc.paragraphs:
-            if paragraph_is_bullet(p) and p.text.strip():
-                bullet_template = p
-                break
+def first_safe_non_heading_paragraph(doc: Document) -> Paragraph:
+    for p in doc.paragraphs:
+        if (
+            p.text.strip()
+            and not paragraph_is_heading_1(p)
+            and not paragraph_is_bullet(p)
+            and not paragraph_is_document_title_style(p)
+        ):
+            return p
+    return first_non_empty_paragraph(doc)
 
-    if bullet_template is None:
-        bullet_template = normal_template
 
-    return normal_template, bullet_template
+def paragraph_is_safe_normal_template(paragraph: Paragraph) -> bool:
+    return (
+        bool(paragraph.text.strip())
+        and not paragraph_is_any_heading(paragraph)
+        and not paragraph_is_document_title_style(paragraph)
+        and not paragraph_is_bullet(paragraph)
+        and not paragraph_looks_like_date_location(paragraph)
+        and not paragraph_looks_like_company_heading(paragraph)
+        and not paragraph_looks_like_role_heading(paragraph)
+    )
+
+
+def discover_style_templates(doc: Document) -> dict[str, Paragraph]:
+    """Map semantic replacement styles to real paragraph templates in the source DOCX."""
+    safe_non_heading = first_safe_non_heading_paragraph(doc)
+
+    templates: dict[str, Paragraph] = {}
+    templates["section_heading"] = (
+        first_matching_paragraph(doc, paragraph_looks_like_section_heading)
+        or first_non_empty_paragraph(doc)
+    )
+    templates["normal"] = (
+        first_matching_paragraph(doc, paragraph_is_safe_normal_template)
+        or safe_non_heading
+    )
+    templates["bullet"] = (
+        first_matching_paragraph(doc, paragraph_is_bullet)
+        or templates["normal"]
+    )
+    templates["company_heading"] = (
+        first_matching_paragraph(doc, lambda p: paragraph_has_heading_level(p, 2))
+        or first_matching_paragraph(doc, paragraph_looks_like_company_heading)
+        or templates["normal"]
+    )
+    templates["role_heading"] = (
+        first_matching_paragraph(doc, lambda p: paragraph_has_heading_level(p, 3))
+        or first_matching_paragraph(doc, paragraph_looks_like_role_heading)
+        or templates["company_heading"]
+        or templates["normal"]
+    )
+    templates["date_location"] = (
+        first_matching_paragraph(doc, paragraph_looks_like_date_location)
+        or templates["normal"]
+    )
+
+    for style_source in NON_SECTION_STYLE_SOURCES:
+        template = templates[style_source]
+        if paragraph_is_heading_1(template):
+            warn(
+                f"semantic style {style_source!r} resolved to Heading 1; "
+                "using a non-section fallback instead"
+            )
+            templates[style_source] = safe_non_heading
+
+    return templates
 
 
 def infer_end_index(doc: Document, start_idx: int) -> int | None:
@@ -292,7 +467,7 @@ def parse_patch_paragraphs(raw_items: Any, context: str) -> list[PatchPara]:
                 raise ValueError(f"{context}[{idx}].text must be a string")
 
             style_source = raw.get("style", "normal")
-            if style_source not in {"normal", "bullet", "keep"}:
+            if style_source not in SUPPORTED_STYLE_SOURCES:
                 warn(f"{context}[{idx}] has unknown style {style_source!r}; using 'normal'")
                 style_source = "normal"
 
@@ -459,7 +634,14 @@ def apply_skills_replacements(doc: Document, skills: Any) -> int:
     return 0
 
 
-def apply_block_items(doc: Document, start_idx: int, end_idx: int, items: list[PatchPara], context: str) -> bool:
+def apply_block_items(
+    doc: Document,
+    start_idx: int,
+    end_idx: int,
+    items: list[PatchPara],
+    context: str,
+    style_templates: dict[str, Paragraph],
+) -> bool:
     if not items:
         warn(f"{context} had no replacement_paragraphs after parsing; skipping")
         return False
@@ -475,14 +657,12 @@ def apply_block_items(doc: Document, start_idx: int, end_idx: int, items: list[P
             warn(f"{context} only repeated the end heading anchor; skipping")
             return False
 
-    normal_template, bullet_template = resolve_block_templates(doc, start_idx, end_idx)
     replace_block(
         doc,
         start_idx,
         end_idx,
         items,
-        normal_template=normal_template,
-        bullet_template=bullet_template,
+        style_templates=style_templates,
     )
     return True
 
@@ -492,6 +672,7 @@ def apply_named_blocks(
     raw_blocks: Any,
     *,
     label: str,
+    style_templates: dict[str, Paragraph],
     default_use_heading_key: bool = False,
     require_end_heading: bool = False,
 ) -> int:
@@ -518,7 +699,9 @@ def apply_named_blocks(
 
         replacement_paragraphs = block.get("replacement_paragraphs")
         if replacement_paragraphs is None:
-            warn(f"{context} is missing 'replacement_paragraphs'; skipping")
+            replacement_paragraphs = block.get("content")
+        if replacement_paragraphs is None:
+            warn(f"{context} is missing 'replacement_paragraphs' or 'content'; skipping")
             continue
 
         try:
@@ -551,7 +734,7 @@ def apply_named_blocks(
                 warn(f"{context} could not infer an end boundary; provide 'end_heading' to disambiguate")
                 continue
 
-        if apply_block_items(doc, start_idx, end_idx, items, context):
+        if apply_block_items(doc, start_idx, end_idx, items, context, style_templates):
             applied += 1
 
     return applied
@@ -593,6 +776,7 @@ def main() -> None:
     doc = Document(str(src))
     if not doc.paragraphs:
         raise ValueError("Source DOCX contains no paragraphs")
+    style_templates = discover_style_templates(doc)
 
     applied_counts: dict[str, int] = {}
 
@@ -603,6 +787,7 @@ def main() -> None:
         doc,
         replacements.get("experience_blocks"),
         label="experience_blocks",
+        style_templates=style_templates,
         default_use_heading_key=True,
         require_end_heading=False,
     )
@@ -610,6 +795,7 @@ def main() -> None:
         doc,
         replacements.get("section_replacements"),
         label="section_replacements",
+        style_templates=style_templates,
         default_use_heading_key=True,
         require_end_heading=False,
     )
@@ -617,6 +803,7 @@ def main() -> None:
         doc,
         replacements.get("block_replacements"),
         label="block_replacements",
+        style_templates=style_templates,
         default_use_heading_key=False,
         require_end_heading=True,
     )

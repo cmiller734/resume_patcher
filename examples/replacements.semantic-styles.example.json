@@ -1,0 +1,34 @@
+{
+  "block_replacements": [
+    {
+      "start_heading": "Work EXPERIENCE",
+      "end_heading": "EDUCATION",
+      "content": [
+        {
+          "text": "Work EXPERIENCE",
+          "style": "section_heading"
+        },
+        {
+          "text": "Pearl Marketing & Freelance | Backend Systems, Automation & Web Application Support",
+          "style": "company_heading"
+        },
+        {
+          "text": "Application Support Consultant",
+          "style": "role_heading"
+        },
+        {
+          "text": "Remote | May 2025 - Present",
+          "style": "date_location"
+        },
+        {
+          "text": "Supported live WordPress and WooCommerce systems while preserving deterministic patcher behavior.",
+          "style": "bullet"
+        },
+        {
+          "text": "Additional unbulleted context can use a safe non-heading paragraph template.",
+          "style": "normal"
+        }
+      ]
+    }
+  ]
+}

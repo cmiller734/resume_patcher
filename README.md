@@ -80,15 +80,50 @@ pip install -r requirements.txt
 ## Usage
 
 ```bash
-python3 resume_patcher.py --src "/path/to/master_resume.docx" --out "/path/to/tailored_resume.docx"
+python3 resume_patcher.py --src "/path/to/master_resume.docx" --replacements "/path/to/replacements.json" --out "/path/to/tailored_resume.docx"
 ```
 
 Arguments:
 
 - `--src`: Input resume `.docx`
+- `--replacements`: Replacement JSON path
 - `--out`: Output resume `.docx`
 
 The script prints `Wrote <output_path>` on success.
+
+## Replacement JSON Styles
+
+Block replacements may provide paragraphs as strings or objects. Object items support these deterministic formatting styles:
+
+- `section_heading`: top-level section label template, such as `SUMMARY`, `SKILLS`, `Work EXPERIENCE`, or `EDUCATION`.
+- `company_heading`: company/group heading template discovered from existing resume company headings.
+- `role_heading`: role/title heading template discovered from existing role headings.
+- `date_location`: date/location line template discovered from existing date/location paragraphs.
+- `normal`: safe plain paragraph template. This is intentionally never allowed to fall back to Heading 1.
+- `bullet`: bullet/list paragraph template.
+- `keep`: preserve the target paragraph's current formatting when replacing that paragraph.
+
+Example:
+
+```json
+{
+  "block_replacements": [
+    {
+      "start_heading": "Work EXPERIENCE",
+      "end_heading": "EDUCATION",
+      "content": [
+        {"text": "Work EXPERIENCE", "style": "section_heading"},
+        {"text": "Pearl Marketing & Freelance | Backend Systems, Automation & Web Application Support", "style": "company_heading"},
+        {"text": "Application Support Consultant", "style": "role_heading"},
+        {"text": "Remote | May 2025 - Present", "style": "date_location"},
+        {"text": "Supported live WordPress and WooCommerce systems...", "style": "bullet"}
+      ]
+    }
+  ]
+}
+```
+
+The legacy key `replacement_paragraphs` is still supported; `content` is accepted as an alias for block replacement items. Existing files that use only `normal` and `bullet` continue to work, but `normal` now resolves to a safe non-heading template instead of cloning the replaced block's first paragraph.
 
 ## End-to-End AI Workflow
 
@@ -115,8 +150,18 @@ The script prints `Wrote <output_path>` on success.
 
 - The patch logic is currently profile-specific and uses anchor text lookups (exact/contains matching) for target sections.
 - If expected anchor text is missing or changed in the source resume, the script raises a `ValueError`.
-- The script depends on template paragraph indices from the source document for style cloning (currently paragraphs `8` and `10`). Large structural changes to the master resume may require script updates.
+- The script discovers semantic paragraph templates from the source document before applying block replacements. It prefers real section, company, role, date/location, normal, and bullet paragraphs already present in the resume.
 - The script preserves existing section layout intent and avoids rebuilding the document from scratch.
+
+## Regression Check
+
+Run the focused Work Experience formatting regression after installing dependencies:
+
+```bash
+python3 tests/regression_work_experience_styles.py
+```
+
+The check replaces `Work EXPERIENCE` through `EDUCATION`, then inspects the generated DOCX XML to verify that inserted company, role, and date/location paragraphs are not Heading 1, the retained section heading is Heading 1, and inserted bullets keep bullet/list formatting.
 
 ## Troubleshooting
 

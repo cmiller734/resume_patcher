@@ -36,7 +36,13 @@
       "consultant-speak that sounds generic rather than grounded in the user's actual work",
       "over-tailoring bullets until they could belong to any generic support, implementation, or SaaS candidate",
       "long compound bullets that stack abstract responsibilities instead of saying one concrete thing clearly",
-      "rewriting distinctive source-resume accomplishments into vague job-description language"
+      "rewriting distinctive source-resume accomplishments into vague job-description language",
+      "job-description-shaped bullets that sound technically correct but are not clearly grounded in the user's actual work",
+      "synthetic support-language that mirrors the employer's posting instead of showing lived experience",
+      "bullets that describe what the target role does rather than what the user actually did",
+      "abstract handoff/documentation lines that could be written for any implementation or support candidate",
+      "controlled-test-environment phrasing unless tied to a specific product, tool, customer environment, bug, or internal reproduction workflow the user actually used",
+      "over-polished verbs and stacked qualifiers that make true experience sound fabricated"
     ],
     "prioritize": [
       "STAR-style substance where possible",
@@ -49,7 +55,11 @@
       "using 'Additional Web Development Experience' section instead of individual roles prior to Apica",
       "preserving distinctive master-resume accomplishments, tools, systems, incidents, metrics, and projects when they are relevant",
       "clear action-object-result bullets that make it obvious what the user actually did",
-      "specific technical texture from the master resume before adding generic role keywords"
+      "specific technical texture from the master resume before adding generic role keywords",
+      "source-first tailoring: begin with the user's actual tools, systems, customers, incidents, and outcomes, then lightly align to the JD",
+      "distinctive proof points that make the user's profile memorable rather than merely compliant",
+      "bullets that sound like they were written by someone who actually did the work",
+      "specific Apica support and implementation evidence before generic Tier 2 support language"
     ]
   },
   "bullet_preferences": {
@@ -73,7 +83,10 @@
     "older_roles": "Compress older roles aggressively when they do not support the target role, especially by using Additional Web Development Experience or Additional Information Technology Experience instead of individual early-career role blocks.",
     "cover_letters": "Use cover letters to explain motivation, fit, and unusual alignment rather than restating the resume.",
     "experience_bullets": "Each bullet should answer: what did the user actually do, with what tool/system/environment, and what changed or became clearer as a result?",
-    "over_tailoring_guardrail": "Tailoring should sharpen the resume toward the job, not erase the user's specific work history. If a tailored bullet could describe almost any support or implementation candidate, rewrite it closer to the master resume."
+    "over_tailoring_guardrail": "Tailoring should sharpen the resume toward the job, not erase the user's specific work history. If a tailored bullet could describe almost any support or implementation candidate, rewrite it closer to the master resume.",
+    "source_first_tailoring": "When tailoring, first identify the strongest real source-resume evidence for the target requirement. Only then add role-relevant keywords. Do not create bullets by translating the JD into resume language.",
+    "jd_mirroring_guardrail": "If a bullet mainly proves that the writer read the job description, reject it. A strong bullet should prove a specific work history: product, environment, tool, customer type, incident, metric, or artifact.",
+    "distinctiveness_requirement": "For every major role, preserve at least one distinctive detail that makes the user different from a generic candidate, such as Apica observability, monitoring agents, Windows/Linux on-prem deployments, Postman/API troubleshooting, SQL/log analysis, Zendesk tooling, OpenTelemetry, customer documentation rewrites, or WooCommerce subscription workflow ownership."
   },
   "default_positioning": {
     "primary_lane": "Technical/Application Support, Implementation, Professional Services, and customer-facing SaaS systems work.",
@@ -90,7 +103,8 @@
     "json_generation": "Generate clean replacements.json that the patcher can apply deterministically.",
     "review_step": "Render-check the DOCX when possible before delivery.",
     "fidelity_check": "Before finalizing, check that the resume still sounds like the user's master resume: specific tools, real projects, concrete incidents, and credible wording should remain visible.",
-    "generic_bullet_check": "Replace or revise bullets that sound polished but generic, especially if they do not clearly say what the user did."
+    "generic_bullet_check": "Replace or revise bullets that sound polished but generic, especially if they do not clearly say what the user did.",
+    "jd_shape_check": "Before finalizing replacements.json, scan for bullets that sound like a generic paraphrase of the JD. Revise them until each bullet contains a concrete source-resume anchor such as Apica, Windows/Linux agents, Postman, SQL/logs, Zendesk, JIRA, SSL/TLS, WordPress/WooCommerce, customer dashboards, documentation rewrites, or a specific customer/environment outcome."
   },
   "bullet_specificity_strategy": {
     "principle": "Prefer concrete, source-resume-grounded bullets over abstract role summaries.",
@@ -100,7 +114,11 @@
       "Prefer one clear action per bullet over stacked clauses with multiple abstract responsibilities.",
       "Use target-job keywords only when attached to a real task, system, project, or outcome.",
       "Avoid generic verbs like coordinated, collaborated, supported, or created unless the rest of the bullet makes the concrete work obvious.",
-      "If a bullet sounds like it could belong to any generic support candidate, make it more specific or replace it with a stronger source-resume accomplishment."
+      "If a bullet sounds like it could belong to any generic support candidate, make it more specific or replace it with a stronger source-resume accomplishment.",
+      "Before accepting a tailored bullet, ask whether it would still be impressive if the target JD disappeared. If not, it is probably too JD-shaped.",
+      "Do not use phrases like 'controlled test environments,' 'handoff notes,' 'cross-functional partnership,' or 'customer success outcomes' unless the rest of the bullet grounds them in a real system, artifact, or incident.",
+      "When a JD requirement is generic, map it to a specific user proof point rather than repeating the requirement. Example: map 'installing/configuring software' to Apica Windows/Linux monitoring agent deployments.",
+      "Preserve the user's strongest differentiators even if they are adjacent rather than exact keyword matches. Specific adjacent proof is better than generic exact-match wording."
     ],
     "style_example": {
       "strong_pattern": "Diagnosed a WooCommerce database performance issue by analyzing telemetry, identifying high-volume Action Scheduler queries, and implementing targeted cleanup to restore site stability.",
@@ -117,5 +135,54 @@
     "relevance_vs_recency": "Lead with the ordering that best answers the human reader's first concern, but make recency clear. If current work is more than a year newer than the strongest prior experience, current work may lead as a compact section while the strongest relevant employer remains the main proof block.",
     "current_contract_work": "Use current Pearl/Freelance work to answer what the user has been doing recently. Frame it around production systems, troubleshooting, implementation, documentation, and client ownership when relevant.",
     "early_roles": "Collapse early roles into Additional Experience unless one is directly central to the target job."
+  },
+  "anti_ai_bullet_guardrails": {
+    "principle": "Tailoring should make the user's real experience easier to recognize as relevant, not replace it with a polished paraphrase of the job description.",
+    "source_evidence_first": [
+      "Start each revised bullet from a real master-resume bullet, project, incident, tool, environment, customer scenario, or measurable outcome.",
+      "A target-job keyword may be added only when it is attached to that real evidence.",
+      "Prefer 'what I did in Apica/WordPress/WooCommerce/customer environments' over 'what this job wants someone to do.'"
+    ],
+    "reject_if": [
+      "The bullet could describe almost any Tier 2 support, implementation, SaaS, or IT candidate.",
+      "The bullet uses several JD terms but does not name a real product, system, tool, environment, customer context, or result.",
+      "The bullet sounds like a responsibility summary instead of a work-history accomplishment.",
+      "The bullet feels suspiciously convenient because it mirrors the JD's phrasing too closely.",
+      "The bullet is true in a broad sense but erases the user's more interesting specific proof."
+    ],
+    "rewrite_method": [
+      "Replace abstract nouns with concrete objects: logs, SQL queries, Postman requests, Zendesk tickets, JIRA defects, Windows services, Linux agents, SSL/TLS certificates, IIS, Apache/Tomcat, SQL Server, DNS, WooCommerce plugins, Action Scheduler, customer dashboards.",
+      "Name the environment when useful: Apica SaaS, on-prem Windows Server, Linux customer infrastructure, WordPress/WooCommerce production sites, enterprise customer environments.",
+      "Keep the sentence direct and plausible. One clear action plus one concrete result is usually stronger than a long stacked bullet.",
+      "When the JD asks for a generic capability, answer with the closest real example instead of copying the capability."
+    ],
+    "bad_to_better_examples": [
+      {
+        "bad": "Reproduce customer-reported issues in controlled test environments, isolate scope, history, configuration variables, and document findings before applying fixes or escalating vendor defects.",
+        "better": "Reproduced Apica SaaS and on-prem monitoring issues across Windows Server and Linux environments, using logs, SQL queries, Postman, and customer configuration details to determine whether issues were local, environmental, or product-related.",
+        "why": "The better version still maps to bug reproduction and escalation, but it names the actual platform, environments, tools, and diagnostic frame."
+      },
+      {
+        "bad": "Create support documentation and handoff notes so customers can maintain day-to-day site operations after implementation work is complete.",
+        "better": "Rewrote Linux and Windows agent installation documentation used by customers and internal support teams, reducing repeated setup questions and helping new users complete deployments with less back-and-forth.",
+        "why": "The better version uses a real documentation accomplishment instead of generic documentation language."
+      },
+      {
+        "bad": "Partner with customers to resolve technical issues and ensure a positive support experience.",
+        "better": "Owned escalated Apica support cases for enterprise customers, translating vague monitoring symptoms into reproducible findings, customer-side fixes, or clear JIRA defects for Engineering.",
+        "why": "The better version keeps the customer-service value while proving the technical support workflow with specific context."
+      }
+    ]
+  },
+  "target_requirement_mapping_strategy": {
+    "principle": "Map target requirements to the user's closest real evidence rather than writing bullets that merely restate the requirement.",
+    "examples": {
+      "software installation_and_configuration": "Apica Windows/Linux monitoring agent installs, Windows Server service configuration, SSL/TLS certificate setup, IIS/Apache/Tomcat/SQL Server deployment troubleshooting, WordPress/WooCommerce plugin configuration.",
+      "bug_reproduction_and_escalation": "Internal reproduction of Apica SaaS/on-prem behavior, logs/SQL/Postman/telemetry analysis, JIRA defect documentation for Engineering.",
+      "crm_case_tracking": "Zendesk case ownership, SLA-driven enterprise support, customer history and issue notes used for escalations.",
+      "support_documentation": "Linux and Windows agent installation guide rewrites, internal KBs, customer-facing implementation and troubleshooting documentation.",
+      "customer_service": "Sole U.S. technical support lead, enterprise customer ownership, training workshops, high-value customer communication during production issues.",
+      "windows_operating_systems": "Windows Server, services, IIS, SSL/TLS, registry/configuration-adjacent troubleshooting, monitoring agents, customer infrastructure constraints."
+    }
   }
 }
