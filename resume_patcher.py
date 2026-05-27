@@ -54,7 +54,7 @@ FORBIDDEN_BASE_RESUME_FILENAMES = {
     "Caleb Miller - Application Systems Engineer Resume.docx",
     "Caleb Miller - New Dev resume.docx",
 }
-DEFAULT_PACKAGE_MANIFEST = "resume_package_manifest.json"
+DEFAULT_PACKAGE_MANIFEST = "manifest.json"
 REQUIRED_PACKAGE_ROOT = "resume_patcher"
 EXPECTED_OUTPUT_SECTION_HEADERS = ("SUMMARY", "SKILLS", "WORK EXPERIENCE", "EDUCATION")
 ROLE_KEYWORDS = (

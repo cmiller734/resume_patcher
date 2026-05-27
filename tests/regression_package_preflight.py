@@ -49,14 +49,14 @@ def build_package(package_dir: Path, zip_path: Path, *, forbidden_base: bool = F
         shutil.copy2(REPO_ROOT / name, project_dir / name)
 
     write_replacements(project_dir / "replacements.json")
-    manifest = json.loads((REPO_ROOT / "resume_package_manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads((REPO_ROOT / "manifest.json").read_text(encoding="utf-8"))
 
     if forbidden_base:
         shutil.copy2(REPO_ROOT / MASTER_RESUME, project_dir / FORBIDDEN_RESUME)
         manifest["master_resume_path"] = FORBIDDEN_RESUME
         manifest["required_files"].append(FORBIDDEN_RESUME)
 
-    (project_dir / "resume_package_manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    (project_dir / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
     (package_dir / ".DS_Store").write_text("ignored metadata", encoding="utf-8")
     (package_dir / "._resume_patcher").write_text("ignored metadata", encoding="utf-8")
     (project_dir / ".DS_Store").write_text("ignored metadata", encoding="utf-8")
@@ -64,7 +64,7 @@ def build_package(package_dir: Path, zip_path: Path, *, forbidden_base: bool = F
     (project_dir / "~$Caleb Miller Master Resume.docx").write_text("ignored lock", encoding="utf-8")
     macosx_dir = package_dir / "__MACOSX" / PACKAGE_ROOT
     macosx_dir.mkdir(parents=True, exist_ok=True)
-    (macosx_dir / "._resume_package_manifest.json").write_text("ignored metadata", encoding="utf-8")
+    (macosx_dir / "._manifest.json").write_text("ignored metadata", encoding="utf-8")
 
     with ZipFile(zip_path, "w") as zf:
         for path in package_dir.rglob("*"):

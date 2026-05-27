@@ -99,13 +99,13 @@ Package mode:
 python3 resume_patcher.py --package "/path/to/resume_package.zip" --out "/path/to/tailored_resume.docx"
 ```
 
-Package mode extracts the ZIP to a temporary directory, requires a real top-level `resume_patcher/` folder, reads `resume_patcher/resume_package_manifest.json`, validates the package, and then runs the patcher. It ignores macOS and Word metadata artifacts such as `__MACOSX/`, `.DS_Store`, `._*`, and `~$*` while validating the top-level package shape. It does not search the working directory for fallback resumes or similarly named files.
+Package mode extracts the ZIP to a temporary directory, requires a real top-level `resume_patcher/` folder, reads `resume_patcher/manifest.json`, validates the package, and then runs the patcher. It ignores macOS and Word metadata artifacts such as `__MACOSX/`, `.DS_Store`, `._*`, and `~$*` while validating the top-level package shape. It does not search the working directory for fallback resumes or similarly named files.
 
 The script prints `Wrote <output_path>` on success.
 
 ## Package Manifest
 
-ZIP packages should include `resume_package_manifest.json` inside the required `resume_patcher/` package root. The manifest declares the exact package paths the patcher is allowed to use, relative to `resume_patcher/`.
+ZIP packages should include `manifest.json` inside the required `resume_patcher/` package root. The manifest declares the exact package paths the patcher is allowed to use, relative to `resume_patcher/`.
 
 ```json
 {
