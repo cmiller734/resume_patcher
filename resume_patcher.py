@@ -161,6 +161,80 @@ def set_paragraph_text_keep_format(paragraph: Paragraph, text: str, template: Pa
         previous_run = run
 
 
+def _template_line_run_segments(template: Paragraph) -> list[list[tuple[str, Any]]]:
+    lines: list[list[tuple[str, Any]]] = [[]]
+    for run in template.runs:
+        parts = run.text.split("\n")
+        for idx, part in enumerate(parts):
+            if idx > 0:
+                lines.append([])
+            if part:
+                lines[-1].append((part, run))
+    return lines
+
+
+def _skill_line_format_runs(template: Paragraph, line_idx: int) -> tuple[Any, Any]:
+    lines = _template_line_run_segments(template)
+    if not lines:
+        return None, None
+
+    segments = lines[min(line_idx, len(lines) - 1)]
+    if not segments:
+        fallback = template.runs[0] if template.runs else None
+        return fallback, fallback
+
+    combined_text = "".join(text for text, _run in segments)
+    colon_idx = combined_text.find(":")
+    label_run = next((run for text, run in segments if text.strip()), segments[0][1])
+    rest_run = None
+
+    if colon_idx >= 0:
+        pos = 0
+        for text, run in segments:
+            next_pos = pos + len(text)
+            if pos <= colon_idx < next_pos:
+                label_run = run
+            if next_pos > colon_idx + 1 and text[max(0, colon_idx + 1 - pos) :].strip():
+                rest_run = run
+                break
+            pos = next_pos
+
+    if rest_run is None:
+        rest_run = next((run for text, run in segments if text.strip() and run is not label_run), label_run)
+
+    return label_run, rest_run
+
+
+def set_skills_text_keep_label_format(paragraph: Paragraph, text: str, template: Paragraph) -> None:
+    """Replace skills text while preserving the template's label/rest run pattern."""
+    for run in list(paragraph.runs):
+        run._element.getparent().remove(run._element)
+
+    previous_run = None
+    for line_idx, line in enumerate(text.split("\n")):
+        if line_idx > 0:
+            if previous_run is None:
+                previous_run = paragraph.add_run("")
+            previous_run.add_break()
+
+        label_source, rest_source = _skill_line_format_runs(template, line_idx)
+        colon_idx = line.find(":")
+        if colon_idx > 0:
+            label_run = paragraph.add_run(line[: colon_idx + 1])
+            _copy_run_format(label_source, label_run)
+            previous_run = label_run
+
+            rest = line[colon_idx + 1 :]
+            if rest:
+                rest_run = paragraph.add_run(rest)
+                _copy_run_format(rest_source, rest_run)
+                previous_run = rest_run
+        else:
+            run = paragraph.add_run(line)
+            _copy_run_format(rest_source or label_source, run)
+            previous_run = run
+
+
 def insert_paragraph_after(paragraph: Paragraph, text: str, template: Paragraph) -> Paragraph:
     """Insert a paragraph after another paragraph, copying style and paragraph properties."""
     new_p = deepcopy(template._p)
@@ -323,6 +397,15 @@ def paragraph_looks_like_date_location(paragraph: Paragraph) -> bool:
     return has_date and (has_location or "|" in text or " - " in text or " – " in text)
 
 
+def text_looks_like_date_location(text: str) -> bool:
+    text = text.strip()
+    if not text or len(text) > 120:
+        return False
+    has_date = DATE_TOKEN_RE.search(text) is not None
+    has_location = LOCATION_TOKEN_RE.search(text) is not None
+    return has_date and (has_location or "|" in text or " - " in text or " – " in text)
+
+
 def paragraph_looks_like_company_heading(paragraph: Paragraph) -> bool:
     text = paragraph.text.strip()
     if not text or paragraph_is_bullet(paragraph) or paragraph_looks_like_section_heading(paragraph):
@@ -344,6 +427,11 @@ def paragraph_looks_like_role_heading(paragraph: Paragraph) -> bool:
     return any(word in lowered for word in ROLE_KEYWORDS) and DATE_TOKEN_RE.search(text) is not None
 
 
+def paragraph_looks_like_combined_role_date_template(paragraph: Paragraph) -> bool:
+    lines = [line.strip() for line in paragraph.text.splitlines() if line.strip()]
+    return len(lines) >= 2 and "|" not in lines[0] and text_looks_like_date_location(lines[1])
+
+
 def first_non_empty_paragraph(doc: Document) -> Paragraph:
     for p in doc.paragraphs:
         if p.text.strip():
@@ -356,6 +444,24 @@ def first_matching_paragraph(doc: Document, predicate) -> Paragraph | None:
         if p.text.strip() and predicate(p):
             return p
     return None
+
+
+def derive_line_template(template: Paragraph, line_idx: int) -> Paragraph:
+    """Create a one-line template using a specific visual line from a source paragraph."""
+    derived = Paragraph(deepcopy(template._p), template._parent)
+    lines = template.text.splitlines() or [template.text]
+    line_text = lines[line_idx] if line_idx < len(lines) else (lines[-1] if lines else "")
+    line_runs = _template_runs_by_line(template)
+    source_run = line_runs[line_idx] if line_idx < len(line_runs) else None
+    if source_run is None and line_runs:
+        source_run = line_runs[-1]
+
+    for run in list(derived.runs):
+        run._element.getparent().remove(run._element)
+
+    run = derived.add_run(line_text)
+    _copy_run_format(source_run, run)
+    return derived
 
 
 def first_safe_non_heading_paragraph(doc: Document) -> Paragraph:
@@ -385,6 +491,7 @@ def paragraph_is_safe_normal_template(paragraph: Paragraph) -> bool:
 def discover_style_templates(doc: Document) -> dict[str, Paragraph]:
     """Map semantic replacement styles to real paragraph templates in the source DOCX."""
     safe_non_heading = first_safe_non_heading_paragraph(doc)
+    combined_role_date_template = first_matching_paragraph(doc, paragraph_looks_like_combined_role_date_template)
 
     templates: dict[str, Paragraph] = {}
     templates["section_heading"] = (
@@ -405,13 +512,15 @@ def discover_style_templates(doc: Document) -> dict[str, Paragraph]:
         or templates["normal"]
     )
     templates["role_heading"] = (
-        first_matching_paragraph(doc, lambda p: paragraph_has_heading_level(p, 3))
+        (derive_line_template(combined_role_date_template, 0) if combined_role_date_template is not None else None)
+        or first_matching_paragraph(doc, lambda p: paragraph_has_heading_level(p, 3))
         or first_matching_paragraph(doc, paragraph_looks_like_role_heading)
         or templates["company_heading"]
         or templates["normal"]
     )
     templates["date_location"] = (
-        first_matching_paragraph(doc, paragraph_looks_like_date_location)
+        (derive_line_template(combined_role_date_template, 1) if combined_role_date_template is not None else None)
+        or first_matching_paragraph(doc, paragraph_looks_like_date_location)
         or templates["normal"]
     )
 
@@ -598,7 +707,8 @@ def apply_skills_replacements(doc: Document, skills: Any) -> int:
 
             replacement_text = value if value.strip().lower().startswith(target_prefix.lower()) else f"{target_prefix} {value}"
             target = doc.paragraphs[target_idx]
-            set_paragraph_text_keep_format(target, replacement_text, target)
+            template = Paragraph(deepcopy(target._p), target._parent)
+            set_skills_text_keep_label_format(target, replacement_text, template)
             applied += 1
 
         return applied
@@ -625,7 +735,8 @@ def apply_skills_replacements(doc: Document, skills: Any) -> int:
                 warn("skills list has more entries than detected skill target rows; extra entries skipped")
                 break
             target = doc.paragraphs[target_indices[n]]
-            set_paragraph_text_keep_format(target, value, target)
+            template = Paragraph(deepcopy(target._p), target._parent)
+            set_skills_text_keep_label_format(target, value, template)
             applied += 1
 
         return applied
