@@ -166,6 +166,27 @@ Example:
 
 The legacy key `replacement_paragraphs` is still supported; `content` is accepted as an alias for block replacement items. Existing files that use only `normal` and `bullet` continue to work, but `normal` now resolves to a safe non-heading template instead of cloning the replaced block's first paragraph.
 
+## Structured Skills Replacements
+
+`skills` may be provided as a preformatted string, an object mapping categories to item strings/lists, or a structured list:
+
+```json
+{
+  "skills": [
+    {
+      "category": "Support & Customer Success",
+      "items": ["enterprise SaaS support", "technical advising", "customer onboarding"]
+    },
+    {
+      "category": "Systems & Infrastructure",
+      "items": ["Windows Server", "Linux", "Active Directory", "DNS"]
+    }
+  ]
+}
+```
+
+The patcher renders category lines into the existing Skills section while copying paragraph and run formatting from the master resume's Skills templates. Malformed structured entries fail with a validation error instead of being skipped silently.
+
 ## End-to-End AI Workflow
 
 1. Provide the chatbot with:
@@ -201,9 +222,10 @@ Run the focused Work Experience formatting regression after installing dependenc
 ```bash
 python3 tests/regression_work_experience_styles.py
 python3 tests/regression_package_preflight.py
+python3 tests/regression_structured_skills.py
 ```
 
-The Work Experience check replaces `Work EXPERIENCE` through `EDUCATION`, then inspects the generated DOCX XML to verify that inserted role/date, bullet, and skills formatting is copied from the master templates. The package preflight check builds temporary ZIP packages and verifies that the canonical master resume succeeds while a forbidden base resume fails before output generation.
+The Work Experience check replaces `Work EXPERIENCE` through `EDUCATION`, then inspects the generated DOCX XML to verify that inserted role/date, bullet, and skills formatting is copied from the master templates. The package preflight check builds temporary ZIP packages and verifies that the canonical master resume succeeds while a forbidden base resume fails before output generation. The structured Skills check verifies structured input, extra paragraph insertion/removal, preformatted string input, and malformed input failure.
 
 ## Troubleshooting
 

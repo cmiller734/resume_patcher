@@ -77,6 +77,11 @@ class PatchPara:
     style_source: str = "normal"
 
 
+@dataclass(frozen=True)
+class SkillLine:
+    text: str
+
+
 def warn(message: str) -> None:
     print(f"WARNING: {message}")
 
@@ -443,6 +448,15 @@ def set_skills_text_keep_label_format(paragraph: Paragraph, text: str, template:
             run = paragraph.add_run(line)
             _copy_run_format(rest_source or label_source, run)
             previous_run = run
+
+
+def insert_skill_paragraph_after(paragraph: Paragraph, text: str, template: Paragraph) -> Paragraph:
+    new_p = deepcopy(template._p)
+    paragraph._p.addnext(new_p)
+    inserted = Paragraph(new_p, paragraph._parent)
+    inserted.style = template.style
+    set_skills_text_keep_label_format(inserted, text, template)
+    return inserted
 
 
 def insert_paragraph_after(paragraph: Paragraph, text: str, template: Paragraph) -> Paragraph:
@@ -844,6 +858,140 @@ def find_summary_paragraph_index(doc: Document, heading_text: str = "SUMMARY") -
     return None
 
 
+def normalize_skill_items(raw_items: Any, context: str) -> str:
+    if isinstance(raw_items, str):
+        return raw_items.strip()
+
+    if isinstance(raw_items, list):
+        normalized: list[str] = []
+        for idx, item in enumerate(raw_items):
+            if not isinstance(item, str):
+                raise ValueError(f"{context}[{idx}] must be a string")
+            item = item.strip()
+            if item:
+                normalized.append(item)
+        return ", ".join(normalized)
+
+    raise ValueError(f"{context} must be a string or a list of strings")
+
+
+def render_structured_skill_line(raw: Any, context: str) -> SkillLine:
+    if isinstance(raw, str):
+        text = raw.strip()
+        if not text:
+            raise ValueError(f"{context} must not be empty")
+        return SkillLine(text=text)
+
+    if not isinstance(raw, dict):
+        raise ValueError(
+            f"{context} must be a string or an object with string 'category' and string/list 'items'"
+        )
+
+    category = raw.get("category")
+    if not isinstance(category, str) or not category.strip():
+        raise ValueError(f"{context}.category must be a non-empty string")
+
+    if "items" not in raw:
+        raise ValueError(f"{context}.items is required and must be a string or a list of strings")
+
+    items_text = normalize_skill_items(raw.get("items"), f"{context}.items")
+    separator = " " if items_text else ""
+    return SkillLine(text=f"{category.strip()}:{separator}{items_text}")
+
+
+def normalize_skills_replacement(skills: Any) -> list[SkillLine]:
+    if skills is None:
+        return []
+
+    if isinstance(skills, str):
+        lines = [line.strip() for line in skills.splitlines() if line.strip()]
+        if not lines:
+            raise ValueError("skills string must not be empty")
+        return [SkillLine(text=line) for line in lines]
+
+    if isinstance(skills, dict):
+        if "categories" in skills:
+            categories = skills.get("categories")
+            if not isinstance(categories, list) or not categories:
+                raise ValueError("skills.categories must be a non-empty list")
+            return [render_structured_skill_line(raw, f"skills.categories[{idx}]") for idx, raw in enumerate(categories)]
+
+        if not skills:
+            raise ValueError("skills object must not be empty")
+
+        lines: list[SkillLine] = []
+        for label, value in skills.items():
+            if not isinstance(label, str) or not label.strip():
+                raise ValueError("skills object keys must be non-empty category strings")
+            items_text = normalize_skill_items(value, f"skills[{label!r}]")
+            separator = " " if items_text else ""
+            lines.append(SkillLine(text=f"{label.strip()}:{separator}{items_text}"))
+        return lines
+
+    if isinstance(skills, list):
+        if not skills:
+            raise ValueError("skills list must not be empty")
+        return [render_structured_skill_line(raw, f"skills[{idx}]") for idx, raw in enumerate(skills)]
+
+    raise ValueError(
+        "skills must be an object mapping category names to strings/lists, "
+        "or a list of strings/objects with 'category' and 'items'"
+    )
+
+
+def find_skills_section_bounds(doc: Document) -> tuple[int, int] | None:
+    heading_idx = None
+    for i, paragraph in enumerate(doc.paragraphs):
+        if paragraph.text.strip().upper() == "SKILLS":
+            heading_idx = i
+            break
+
+    if heading_idx is None:
+        return None
+
+    end_idx = len(doc.paragraphs)
+    for i in range(heading_idx + 1, len(doc.paragraphs)):
+        paragraph = doc.paragraphs[i]
+        if paragraph.text.strip() and paragraph_looks_like_section_heading(paragraph):
+            end_idx = i
+            break
+
+    return heading_idx, end_idx
+
+
+def render_skills_lines(doc: Document, lines: list[SkillLine]) -> int:
+    bounds = find_skills_section_bounds(doc)
+    if bounds is None:
+        raise ValueError("skills replacement provided but SKILLS section was not found")
+
+    heading_idx, end_idx = bounds
+    targets = [doc.paragraphs[i] for i in range(heading_idx + 1, end_idx) if doc.paragraphs[i].text.strip()]
+    if not targets:
+        raise ValueError("skills replacement provided but no existing Skills paragraph template was found")
+
+    templates = [Paragraph(deepcopy(target._p), target._parent) for target in targets]
+    rendered_lines = [line.text for line in lines]
+
+    if len(targets) == 1:
+        set_skills_text_keep_label_format(targets[0], "\n".join(rendered_lines), templates[0])
+        return len(rendered_lines)
+
+    cursor = targets[0]
+    for idx, text in enumerate(rendered_lines):
+        template = templates[min(idx, len(templates) - 1)]
+        if idx < len(targets):
+            target = targets[idx]
+            set_skills_text_keep_label_format(target, text, template)
+            cursor = target
+        else:
+            cursor = insert_skill_paragraph_after(cursor, text, template)
+
+    for extra in targets[len(rendered_lines) :]:
+        delete_paragraph(extra)
+
+    return len(rendered_lines)
+
+
 def apply_summary_replacement(doc: Document, summary: Any) -> int:
     if summary is None:
         return 0
@@ -896,63 +1044,8 @@ def apply_skills_replacements(doc: Document, skills: Any) -> int:
     if skills is None:
         return 0
 
-    applied = 0
-
-    if isinstance(skills, dict):
-        for label, value in skills.items():
-            if not isinstance(label, str) or not isinstance(value, str):
-                warn(f"skills entry {label!r} is not string:string; skipping")
-                continue
-
-            target_prefix = f"{label.strip()}:"
-            target_idx = None
-            for i, p in enumerate(doc.paragraphs):
-                if p.text.strip().lower().startswith(target_prefix.lower()):
-                    target_idx = i
-                    break
-
-            if target_idx is None:
-                warn(f"skills label not found in DOCX: {label!r}")
-                continue
-
-            replacement_text = value if value.strip().lower().startswith(target_prefix.lower()) else f"{target_prefix} {value}"
-            target = doc.paragraphs[target_idx]
-            template = Paragraph(deepcopy(target._p), target._parent)
-            set_skills_text_keep_label_format(target, replacement_text, template)
-            applied += 1
-
-        return applied
-
-    if isinstance(skills, list):
-        try:
-            heading_idx = find_para_contains(doc, "SKILLS")
-        except ValueError:
-            warn("skills list provided but SKILLS heading not found")
-            return 0
-
-        target_indices: list[int] = []
-        i = heading_idx + 1
-        while i < len(doc.paragraphs) and len(target_indices) < len(skills):
-            if doc.paragraphs[i].text.strip():
-                target_indices.append(i)
-            i += 1
-
-        for n, value in enumerate(skills):
-            if not isinstance(value, str):
-                warn(f"skills[{n}] is not a string; skipping")
-                continue
-            if n >= len(target_indices):
-                warn("skills list has more entries than detected skill target rows; extra entries skipped")
-                break
-            target = doc.paragraphs[target_indices[n]]
-            template = Paragraph(deepcopy(target._p), target._parent)
-            set_skills_text_keep_label_format(target, value, template)
-            applied += 1
-
-        return applied
-
-    warn("skills must be an object or list; skipping")
-    return 0
+    lines = normalize_skills_replacement(skills)
+    return render_skills_lines(doc, lines)
 
 
 def apply_block_items(
