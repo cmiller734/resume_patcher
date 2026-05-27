@@ -1,5 +1,7 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
+  "profile_name": "Resume Tailoring Preferences - Condensed Human-First Version",
+  "purpose": "Guidance for the AI/chatbot layer before generating replacements.json. The Python patcher should not consume this file or make resume-writing decisions.",
   "usage": {
     "optional": true,
     "default_behavior": "use_by_default_when_present_unless_user_opts_out",
@@ -7,16 +9,19 @@
     "consumed_by": "AI/chatbot layer only",
     "not_consumed_by": "resume_patcher.py"
   },
-  "profile_name": "Resume Tailoring Preferences - Specificity + Product Workflow Positioning",
-  "purpose": "Guidance for the AI resume generation layer before creating replacements.json. This file should not be enforced by the DOCX patcher itself.",
   "architecture_principles": {
-    "separation_of_concerns": "The Python patcher should only perform deterministic document conversion: master_resume.docx + replacements.json -> tailored_resume.docx.",
-    "ai_layer_role": "The AI/chatbot layer should make context-aware tailoring decisions using the job description, master resume, user preferences, and human-reader strategy before generating replacements.json.",
-    "human_reader_priority": "Optimize for real recruiters and hiring managers reading the resume before interviews, not only ATS keyword matching.",
-    "chatbot_core": "The SaaS product should keep a chatbot-style experience at its center because resume tailoring requires collaborative judgment, tradeoff discussion, and dynamic context awareness.",
-    "explicit_usage_of_python_script": "Always use the attached resume_patcher.py script for DOCX generation to ensure consistent formatting and avoid manual errors. Do not bypass the script by manually editing DOCX files."
+    "separation_of_concerns": "The AI layer decides tailoring strategy, content, positioning, and replacements.json. The Python patcher only performs deterministic DOCX conversion: master_resume.docx + replacements.json -> tailored_resume.docx.",
+    "master_resume_authority": "Use the Master Resume as the source of truth for content, tone, formatting, and credibility. Do not rebuild the resume from scratch or invent a new structure unless explicitly requested.",
+    "human_reader_priority": "Optimize for real recruiters and hiring managers first, while preserving natural ATS keyword coverage."
   },
-  "global_resume_preferences": {
+  "core_positioning": {
+    "primary_lane": "Solutions-oriented technical support, implementation, professional services, and customer-facing SaaS systems work.",
+    "preferred_framing": "Implementation-focused technical operator who bridges customers, messy workflows, systems, and Engineering.",
+    "key_takeaway": "The user is not just a ticket resolver or coder. He identifies broken workflows, translates requirements into technical systems, implements practical solutions, troubleshoots edge cases, validates the result, documents the workflow, and supports real users.",
+    "coding_identity_guardrail": "Do not frame coding as the user's primary identity. Coding, scripting, AI-assisted development, and automation are tools used to deliver solutions.",
+    "independent_product_work": "Treat recent independent product and automation work as a major proof block when relevant, not gap filler. Subscription Everything, Resume Patcher, Newlyweds, and Canvas Roadshow can show a repeatable pattern of workflow discovery, implementation, validation, and support."
+  },
+  "global_style": {
     "tone": [
       "senior",
       "specific",
@@ -24,234 +29,120 @@
       "direct",
       "human-readable"
     ],
+    "prioritize": [
+      "clear scope of ownership",
+      "root-cause analysis and problem-solving",
+      "implementation ownership",
+      "customer or business impact",
+      "specific tools, systems, incidents, metrics, and artifacts from the Master Resume",
+      "source-first tailoring: start with real experience, then lightly align to the JD",
+      "bullets that sound like they were written by someone who actually did the work"
+    ],
     "avoid": [
-      "overly complex language and excessive use of comma-separated lists, e.g. 'Performed internal user onboarding, offboarding, password resets, VPN troubleshooting, permissions, and access management using Active Directory, Office 365 Admin Center, Okta, AWS IAM/user permissions, and related enterprise tools'",
       "generic AI-sounding language",
       "buzzword stuffing",
+      "keyword soup",
       "vague collaboration filler",
-      "overly broad claims",
-      "inflated or unverifiable accomplishments",
-      "flattening strong technical texture into bland corporate language",
-      "non-standard job titles that feel fabricated, such as 'Technical Implementation & Application Support Consultant' instead of 'Implementation Engineer' or 'Web Developer'",
-      "changing job titles for the sake of keyword matching when it creates a misleading employment history or feels like a fabrication",
-      "consultant-speak that sounds generic rather than grounded in the user's actual work",
-      "over-tailoring bullets until they could belong to any generic support, implementation, or SaaS candidate",
-      "long compound bullets that stack abstract responsibilities instead of saying one concrete thing clearly",
-      "rewriting distinctive source-resume accomplishments into vague job-description language",
-      "job-description-shaped bullets that sound technically correct but are not clearly grounded in the user's actual work",
-      "synthetic support-language that mirrors the employer's posting instead of showing lived experience",
-      "bullets that describe what the target role does rather than what the user actually did",
-      "abstract handoff/documentation lines that could be written for any implementation or support candidate",
-      "controlled-test-environment phrasing unless tied to a specific product, tool, customer environment, bug, or internal reproduction workflow the user actually used",
-      "over-polished verbs and stacked qualifiers that make true experience sound fabricated",
-      "minimizing independent product and automation work as mere side projects",
-      "describing AI-assisted development in a way that implies the AI did the hard work",
-      "burying the user's product/workflow automation pattern beneath ordinary support-tool bullet points when the role values implementation, troubleshooting, automation, or systems thinking"
-    ],
-    "prioritize": [
-      "STAR-style substance where possible",
-      "clear scope of ownership",
-      "technical specificity",
-      "customer or business impact",
-      "implementation ownership",
-      "root cause analysis and problem-solving",
-      "evidence that a human recruiter can understand quickly",
-      "using 'Additional Web Development Experience' section instead of individual roles prior to Apica",
-      "preserving distinctive master-resume accomplishments, tools, systems, incidents, metrics, and projects when they are relevant",
-      "clear action-object-result bullets that make it obvious what the user actually did",
-      "specific technical texture from the master resume before adding generic role keywords",
-      "source-first tailoring: begin with the user's actual tools, systems, customers, incidents, and outcomes, then lightly align to the JD",
-      "distinctive proof points that make the user's profile memorable rather than merely compliant",
-      "bullets that sound like they were written by someone who actually did the work, e.g. 'Managed PKI for a custom Apica desktop apps hosted on Windows Server, using Microsoft Certificates MMC Snap-in'",
-      "specific Apica support and implementation evidence before generic Tier 2 support language",
-      "framing independent product and automation work as a repeatable pattern of workflow discovery, technical translation, product implementation, and production-style validation",
-      "positioning Subscription Everything, Resume Patcher, Newlyweds, and Canvas Roadshow as evidence of product-minded implementation ability when relevant",
-      "showing that AI-assisted development is used as a force multiplier while the user owns architecture, debugging, validation, QA, documentation, and final quality"
+      "inflated or unverifiable claims",
+      "job-description-shaped bullets that lack source-resume evidence",
+      "over-polished wording that makes true experience sound fabricated",
+      "long comma-separated lists that bury the point",
+      "changing job titles in a misleading way",
+      "framing independent product work as hobby projects or gap filler",
+      "describing AI-assisted work as if the AI did the hard work"
     ]
   },
-  "bullet_preferences": {
-    "principle": "Bullet count guidance is a readability heuristic, not a compression rule.",
-    "not_a_hard_limit": true,
-    "guidance": "Use enough bullets to preserve the strongest truthful evidence for the target role. Do not compress a highly relevant role so aggressively that important accomplishments disappear or become generic.",
-    "preferred_recent_or_highly_relevant_role_range": "Usually 5-9 bullets, but allow more when the role is the main proof block and the bullets are specific, readable, and non-redundant.",
-    "preferred_older_or_low_relevance_role_range": "Usually 0-3 bullets or a compact Additional Experience section, depending on relevance.",
-    "quality_bar": "Every bullet should earn its space by adding concrete evidence, not merely repeating a responsibility category."
-  },
-  "job_title_strategy": {
-    "allow_functional_translation_when_truthful": true,
-    "guidance": "Functional title translation is acceptable when it accurately reflects the work and does not create a misleading employment history.",
-    "avoid_exact_role_title_copying_when_it_feels_too_convenient": true,
-    "example": "For Apica, 'Implementation Engineer' may be more useful and still credible than 'Professional Services Engineer' for implementation-focused roles. Avoid copying the exact target title if it feels fabricated."
-  },
-  "content_strategy": {
-    "summary": "Make the hiring manager think this person could be a fit quickly; do not overload it with buzzwords.",
-    "skills": "Tailor skill categories to the role while staying accurate. Include adjacent keywords only when defensible.",
-    "experience": "Lead with the most relevant experience for the target role while keeping the timeline legible. Prefer selecting and lightly reframing real master-resume bullets over rewriting the resume into generic JD language.",
-    "older_roles": "Compress older roles aggressively when they do not support the target role, especially by using Additional Web Development Experience or Additional Information Technology Experience instead of individual early-career role blocks.",
-    "cover_letters": "Use cover letters to explain motivation, fit, and unusual alignment rather than restating the resume.",
-    "experience_bullets": "Each bullet should answer: what did the user actually do, with what tool/system/environment, and what changed or became clearer as a result?",
-    "over_tailoring_guardrail": "Tailoring should sharpen the resume toward the job, not erase the user's specific work history. If a tailored bullet could describe almost any support or implementation candidate, rewrite it closer to the master resume.",
-    "source_first_tailoring": "When tailoring, first identify the strongest real source-resume evidence for the target requirement. Only then add role-relevant keywords. Do not create bullets by translating the JD into resume language.",
-    "jd_mirroring_guardrail": "If a bullet mainly proves that the writer read the job description, reject it. A strong bullet should prove a specific work history: product, environment, tool, customer type, incident, metric, or artifact.",
-    "distinctiveness_requirement": "For every major role, preserve at least one distinctive detail that makes the user different from a generic candidate, such as Apica observability, monitoring agents, Windows/Linux on-prem deployments, Postman/API troubleshooting, SQL/log analysis, Zendesk tooling, OpenTelemetry, customer documentation rewrites, or WooCommerce subscription workflow ownership.",
-    "independent_product_work": "Treat recent independent product and automation work as a major proof block when relevant. The narrative is not 'freelance filler'; it is evidence that the user can identify workflow pain, design a technical solution, build it, debug edge cases, document it, and validate it like production software."
-  },
-  "default_positioning": {
-    "primary_lane": "Technical/Application Support, Implementation, Professional Services, and customer-facing SaaS systems work.",
-    "secondary_lane": "WordPress/WooCommerce and custom web systems should be framed as implementation, product operations, troubleshooting, and workflow ownership when appropriate, not merely coding.",
-    "preferred_framing": "Support Engineer+ / implementation-focused technical operator who can bridge customers, systems, and engineering.",
-    "product_workflow_automation_lane": "A repeatable strength in identifying broken workflows, translating messy human requirements into technical systems, building practical tools, and validating them like production software."
-  },
-  "ats_strategy": {
-    "include_relevant_keywords": true,
-    "guidance": "Use role-relevant keywords naturally in summary, skills, and bullets. Do not sacrifice human credibility for exact keyword stuffing.",
-    "exact_title_matching": "Can help, but should be balanced against human smell-test risk."
-  },
-  "output_expectations": {
-    "docx_formatting": "Preserve the master resume's formatting and structure as closely as possible.",
-    "json_generation": "Generate clean replacements.json that the patcher can apply deterministically.",
-    "review_step": "Render-check the DOCX when possible before delivery.",
-    "fidelity_check": "Before finalizing, check that the resume still sounds like the user's master resume: specific tools, real projects, concrete incidents, and credible wording should remain visible.",
-    "generic_bullet_check": "Replace or revise bullets that sound polished but generic, especially if they do not clearly say what the user did.",
-    "jd_shape_check": "Before finalizing replacements.json, scan for bullets that sound like a generic paraphrase of the JD. Revise them until each bullet contains a concrete source-resume anchor such as Apica, Windows/Linux agents, Postman, SQL/logs, Zendesk, JIRA, SSL/TLS, WordPress/WooCommerce, customer dashboards, documentation rewrites, or a specific customer/environment outcome.",
-    "product_workflow_positioning_check": "Before finalizing a tailored resume, check whether the target role would benefit from emphasizing the user's independent product/workflow automation pattern. If yes, ensure the resume positively frames Subscription Everything, Resume Patcher, Newlyweds, and/or Canvas Roadshow as credible implementation and systems-building evidence rather than filler."
-  },
-  "bullet_specificity_strategy": {
-    "principle": "Prefer concrete, source-resume-grounded bullets over abstract role summaries.",
-    "rules": [
-      "Start from the master resume's real accomplishments and choose the most relevant evidence before adding target-job phrasing.",
-      "Preserve named tools, systems, environments, projects, incidents, and metrics when they are truthful and relevant.",
-      "Prefer one clear action per bullet over stacked clauses with multiple abstract responsibilities.",
-      "Use target-job keywords only when attached to a real task, system, project, or outcome.",
-      "Avoid generic verbs like coordinated, collaborated, supported, or created unless the rest of the bullet makes the concrete work obvious.",
-      "If a bullet sounds like it could belong to any generic support candidate, make it more specific or replace it with a stronger source-resume accomplishment.",
-      "Before accepting a tailored bullet, ask whether it would still be impressive if the target JD disappeared. If not, it is probably too JD-shaped.",
-      "Do not use phrases like 'controlled test environments,' 'handoff notes,' 'cross-functional partnership,' or 'customer success outcomes' unless the rest of the bullet grounds them in a real system, artifact, or incident.",
-      "When a JD requirement is generic, map it to a specific user proof point rather than repeating the requirement. Example: map 'installing/configuring software' to Apica Windows/Linux monitoring agent deployments.",
-      "Preserve the user's strongest differentiators even if they are adjacent rather than exact keyword matches. Specific adjacent proof is better than generic exact-match wording."
+  "summary_strategy": {
+    "principle": "The Summary is for human persuasion, not ATS keyword dumping. It should answer 'why this candidate?' in clear sentences.",
+    "must_answer": [
+      "What kind of technical person is this candidate?",
+      "Why are they credible for this role?",
+      "How do they operate when work is complex or ambiguous?",
+      "What should the reader believe before reaching Skills and Experience?"
     ],
-    "style_example": {
-      "strong_pattern": "Diagnosed a WooCommerce database performance issue by analyzing telemetry, identifying high-volume Action Scheduler queries, and implementing targeted cleanup to restore site stability.",
-      "why_it_works": "It names the system, the diagnostic method, the actual finding, the fix, and the result without sounding inflated."
+    "guidance": [
+      "Use 2-4 concise sentences.",
+      "Lead with the strongest role-relevant operating pattern, not a list of tools.",
+      "Include only a few credibility signals; put detailed tool coverage in Skills and Experience.",
+      "When the JD gives strong human-success language, translate it into the user's real experience."
+    ],
+    "avoid": [
+      "compressed Skills sections",
+      "15-25 tools in one paragraph",
+      "dense comma-separated technology lists",
+      "using the Summary mainly for ATS matching"
+    ],
+    "example_for_scale_support_roles": "Senior technical support and implementation engineer who is strongest in ambiguous customer issues: digging until the root cause is clear, communicating precisely under pressure, and turning repeat problems into better documentation, tooling, and support workflows. Brings 9 years of enterprise SaaS experience and a practical implementation mindset to help technical support teams scale without losing customer trust."
+  },
+  "skills_strategy": {
+    "principle": "The Skills section carries most ATS/tool coverage. Keep it accurate, scannable, and role-aligned without becoming bloated.",
+    "guidance": [
+      "Use role-relevant categories.",
+      "Include adjacent keywords only when defensible.",
+      "Avoid repeating the same concept across too many categories.",
+      "Prefer compact keyword coverage here instead of overloading the Summary."
+    ]
+  },
+  "experience_strategy": {
+    "principle": "Experience bullets should prove work history, not paraphrase the JD.",
+    "guidance": [
+      "Start from the Master Resume's real accomplishments, tools, systems, customers, incidents, and outcomes.",
+      "Use target-job keywords only when attached to real evidence.",
+      "Prefer one clear action per bullet over stacked abstract responsibilities.",
+      "Every major role should preserve at least one distinctive detail that makes the user memorable.",
+      "If a bullet could describe almost any support or implementation candidate, make it more specific or replace it."
+    ],
+    "good_bullet_pattern": "Action + concrete system/tool/environment + diagnostic or implementation method + result/clarity gained.",
+    "bad_to_better_example": {
+      "bad": "Partner with customers to resolve technical issues and ensure a positive support experience.",
+      "better": "Owned escalated Apica support cases for enterprise customers, translating vague monitoring symptoms into reproducible findings, customer-side fixes, or clear JIRA defects for Engineering."
     }
   },
-  "apica_structure": {
-    "default_for_support_implementation_and_solutions_roles": "Do not compress Apica into one undifferentiated role. Use a grouped employer header that shows the full Apica tenure and progression, then preserve Professional Services Engineer, Senior Technical Support Engineer, and Technical Support Engineer as separate role entries.",
-    "why": "The grouped header communicates the six-year enterprise SaaS proof point, while separate roles preserve promotion, credibility, and role-specific accomplishments.",
-    "bullet_distribution": "Allocate the most detail to the Apica roles that best prove the target job. Keep bullets specific to actual Apica work rather than generic support responsibilities.",
-    "exception": "Only merge Apica into one compact block if the user explicitly asks for a compressed one-company format or the target resume must be unusually short."
+  "apica_strategy": {
+    "default_structure": "For support, implementation, professional services, and solutions roles, keep Apica as a grouped employer header showing full tenure and progression, then preserve Professional Services Engineer, Senior Technical Support Engineer, and Technical Support Engineer as separate role entries.",
+    "why": "The grouped header communicates the six-year enterprise SaaS proof point, while separate roles preserve promotion history and role-specific accomplishments.",
+    "guidance": "Allocate the most detail to the Apica roles that best prove the target job. Keep bullets specific to actual Apica work."
   },
   "section_strategy": {
-    "relevance_vs_recency": "Lead with the ordering that best answers the human reader's first concern, but make recency clear. If current work is more than a year newer than the strongest prior experience, current work may lead as a compact section while the strongest relevant employer remains the main proof block.",
-    "current_contract_work": "Use current Pearl/Freelance work to answer what the user has been doing recently. Frame it around production systems, troubleshooting, implementation, documentation, and client ownership when relevant.",
-    "early_roles": "Collapse early roles into Additional Experience unless one is directly central to the target job."
+    "current_work": "Use Pearl/Freelance/Independent Product work to answer what the user has been doing recently. Frame it around production systems, implementation, troubleshooting, documentation, automation, and client ownership when relevant.",
+    "older_roles": "Collapse early roles into Additional Web Development Experience or Additional IT Experience unless one is directly central to the target job."
   },
-  "anti_ai_bullet_guardrails": {
-    "principle": "Tailoring should make the user's real experience easier to recognize as relevant, not replace it with a polished paraphrase of the job description.",
-    "source_evidence_first": [
-      "Start each revised bullet from a real master-resume bullet, project, incident, tool, environment, customer scenario, or measurable outcome.",
-      "A target-job keyword may be added only when it is attached to that real evidence.",
-      "Prefer 'what I did in Apica/WordPress/WooCommerce/customer environments' over 'what this job wants someone to do.'"
+  "support_team_scaling_strategy": {
+    "use_when_jd_mentions": [
+      "early member of support team",
+      "define how support operates at scale",
+      "improve processes",
+      "strengthen documentation",
+      "bridge customers and Engineering/Product/Research",
+      "dig until they understand why something is happening",
+      "take ownership end-to-end",
+      "communicate under pressure",
+      "notice details others miss"
     ],
-    "reject_if": [
-      "The bullet could describe almost any Tier 2 support, implementation, SaaS, or IT candidate.",
-      "The bullet uses several JD terms but does not name a real product, system, tool, environment, customer context, or result.",
-      "The bullet sounds like a responsibility summary instead of a work-history accomplishment.",
-      "The bullet feels suspiciously convenient because it mirrors the JD's phrasing too closely.",
-      "The bullet is true in a broad sense but erases the user's more interesting specific proof."
-    ],
-    "rewrite_method": [
-      "Replace abstract nouns with concrete objects: logs, SQL queries, Postman requests, Zendesk tickets, JIRA defects, Windows services, Linux agents, SSL/TLS certificates, IIS, Apache/Tomcat, SQL Server, DNS, WooCommerce plugins, Action Scheduler, customer dashboards.",
-      "Name the environment when useful: Apica SaaS, on-prem Windows Server, Linux customer infrastructure, WordPress/WooCommerce production sites, enterprise customer environments.",
-      "Keep the sentence direct and plausible. One clear action plus one concrete result is usually stronger than a long stacked bullet.",
-      "When the JD asks for a generic capability, answer with the closest real example instead of copying the capability."
-    ],
-    "bad_to_better_examples": [
-      {
-        "bad": "Reproduce customer-reported issues in controlled test environments, isolate scope, history, configuration variables, and document findings before applying fixes or escalating vendor defects.",
-        "better": "Reproduced Apica SaaS and on-prem monitoring issues across Windows Server and Linux environments, using logs, SQL queries, Postman, and customer configuration details to determine whether issues were local, environmental, or product-related.",
-        "why": "The better version still maps to bug reproduction and escalation, but it names the actual platform, environments, tools, and diagnostic frame."
-      },
-      {
-        "bad": "Create support documentation and handoff notes so customers can maintain day-to-day site operations after implementation work is complete.",
-        "better": "Rewrote Linux and Windows agent installation documentation used by customers and internal support teams, reducing repeated setup questions and helping new users complete deployments with less back-and-forth.",
-        "why": "The better version uses a real documentation accomplishment instead of generic documentation language."
-      },
-      {
-        "bad": "Partner with customers to resolve technical issues and ensure a positive support experience.",
-        "better": "Owned escalated Apica support cases for enterprise customers, translating vague monitoring symptoms into reproducible findings, customer-side fixes, or clear JIRA defects for Engineering.",
-        "why": "The better version keeps the customer-service value while proving the technical support workflow with specific context."
-      }
-    ]
+    "positioning": "Show that the user does more than resolve tickets: he helps create repeatable support practice through root-cause analysis, documentation, tooling, escalation quality, and customer trust."
   },
   "target_requirement_mapping_strategy": {
     "principle": "Map target requirements to the user's closest real evidence rather than writing bullets that merely restate the requirement.",
     "examples": {
-      "software installation_and_configuration": "Apica Windows/Linux monitoring agent installs, Windows Server service configuration, SSL/TLS certificate setup, IIS/Apache/Tomcat/SQL Server deployment troubleshooting, WordPress/WooCommerce plugin configuration.",
+      "software_installation_and_configuration": "Apica Windows/Linux monitoring agent installs, Windows Server service configuration, SSL/TLS certificate setup, IIS/Apache/Tomcat/SQL Server deployment troubleshooting, WordPress/WooCommerce plugin configuration.",
       "bug_reproduction_and_escalation": "Internal reproduction of Apica SaaS/on-prem behavior, logs/SQL/Postman/telemetry analysis, JIRA defect documentation for Engineering.",
-      "crm_case_tracking": "Zendesk case ownership, SLA-driven enterprise support, customer history and issue notes used for escalations.",
       "support_documentation": "Linux and Windows agent installation guide rewrites, internal KBs, customer-facing implementation and troubleshooting documentation.",
       "customer_service": "Sole U.S. technical support lead, enterprise customer ownership, training workshops, high-value customer communication during production issues.",
-      "windows_operating_systems": "Windows Server, services, IIS, SSL/TLS, registry/configuration-adjacent troubleshooting, monitoring agents, customer infrastructure constraints."
+      "workflow_automation": "Subscription Everything, Resume Patcher, Zendesk API tooling, customer dashboards, reporting views, and practical automation around repeated workflow pain."
     }
   },
-  "independent_product_automation_positioning": {
-    "principle": "Treat the user's recent independent product and automation work as one of the strongest career achievements of the past year, not as gap filler or side-project filler.",
-    "core_thesis": "The user repeatedly identifies broken workflows, translates messy human requirements into technical systems, builds practical tools around them, and validates those tools like production software.",
-    "projects_to_frame_as_pattern": [
-      {
-        "name": "Newlyweds",
-        "positioning": "A workflow/product implementation project that turned a real-world service or event need into a clearer usable web/customer experience."
-      },
-      {
-        "name": "Canvas Roadshow",
-        "positioning": "A workflow and booking/customer-experience project showing the user's ability to structure messy operational requirements into a practical technical system."
-      },
-      {
-        "name": "Subscription Everything",
-        "positioning": "A production WooCommerce plugin/product built to solve real subscription lifecycle gaps, including customer-facing update workflows, configurable subscription behavior, testing, edge-case handling, and production-safe release thinking."
-      },
-      {
-        "name": "Resume Patcher",
-        "positioning": "A document automation/productivity system combining AI-assisted tailoring decisions with deterministic Python DOCX patching, package validation, formatting preservation, and QA."
-      }
-    ],
-    "preferred_resume_framing": [
-      "Independent Product & Workflow Automation",
-      "Product-minded implementation and support engineer",
-      "Workflow automation, product troubleshooting, and systems implementation",
-      "AI-assisted development used as an implementation accelerator, with the user owning architecture, validation, QA, and final quality"
-    ],
-    "avoid_framing_as": [
-      "side projects",
-      "gap filler",
-      "AI wrote the code",
-      "basic freelance web work",
-      "generic WordPress development",
-      "hobby projects",
-      "unvalidated experimentation"
-    ],
-    "when_to_emphasize": [
-      "Implementation Engineer roles",
-      "Professional Services roles",
-      "Technical Support Engineer roles",
-      "Application Support roles",
-      "Product Support roles",
-      "Solutions Engineer roles",
-      "Automation-heavy roles",
-      "Customer workflow or systems troubleshooting roles",
-      "Roles that value AI-assisted development, internal tooling, documentation, QA, or operational improvement"
-    ],
-    "resume_summary_guidance": "When relevant, the summary may describe the user as a product-minded technical support, implementation, or systems engineer who turns broken workflows into reliable technical systems using customer discovery, troubleshooting, automation, documentation, and production-style validation.",
-    "experience_guidance": "The current Pearl/Freelance/Independent Product work should usually be framed as a coherent pattern of workflow automation and product implementation. It should explain what the user built, what workflow pain it solved, what systems/tools were involved, and how the user validated or supported the result.",
-    "ai_assisted_development_guidance": "Frame AI-assisted development as modern technical orchestration, not as a shortcut. Emphasize that the user uses AI/Codex/LLMs to accelerate implementation and explore options while independently owning architecture, debugging, test design, deterministic automation, packaging, validation, and final quality.",
-    "interview_positioning": "The user is strongest in the messy middle where users know something is broken but the technical shape of the solution is not obvious yet. He can clarify the problem, build the system, test edge cases, document the workflow, and support the user after launch.",
-    "example_resume_bullets": [
-      "Identified broken customer and business workflows, translated ambiguous requirements into usable technical systems, and validated the resulting tools through hands-on testing, documentation, and production-style QA.",
-      "Built Subscription Everything, a WooCommerce extension addressing subscription lifecycle gaps around configurable boxes, mid-cycle updates, customer self-service, and production-safe workflow changes.",
-      "Designed a Resume Patcher automation workflow combining AI-assisted content strategy with deterministic Python DOCX patching, package validation, and formatting-preservation safeguards.",
-      "Used AI-assisted development tools as an implementation accelerator while retaining ownership of architecture, debugging, regression testing, documentation, and release quality.",
-      "Turned repeated client workflow problems into maintainable web, automation, and product systems across WordPress, WooCommerce, Python, JSON configuration, and document-processing pipelines."
-    ]
+  "ai_assisted_work_strategy": {
+    "principle": "Frame AI-assisted development as modern technical orchestration, not as a shortcut.",
+    "guidance": "Emphasize that the user uses AI/Codex/LLMs to accelerate implementation while owning architecture, debugging, test design, deterministic automation, packaging, validation, documentation, and final quality.",
+    "caution": "Do not foreground Resume Patcher by name on applications where it may distract from the role or raise self-referential concerns. Describe the underlying automation/validation capability instead."
+  },
+  "output_expectations": {
+    "docx_formatting": "Preserve the Master Resume's formatting and structure as closely as possible.",
+    "json_generation": "Generate clean replacements.json that the patcher can apply deterministically.",
+    "review_step": "Render-check the DOCX when possible before delivery.",
+    "summary_check": "Before finalizing, inspect the Summary separately. If it reads like keyword soup or a second Skills section, rewrite it for human persuasion.",
+    "skills_check": "Ensure Skills is accurate and scannable, without unnecessary duplicate keyword coverage.",
+    "bullet_check": "Replace generic or JD-shaped bullets with source-grounded accomplishments.",
+    "fidelity_check": "Confirm the resume still sounds like the user's Master Resume: specific tools, real projects, concrete incidents, and credible wording remain visible."
   }
 }
