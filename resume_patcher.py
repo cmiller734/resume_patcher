@@ -12,6 +12,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import tempfile
+from zipfile import BadZipFile, ZipFile
 from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
@@ -46,6 +48,14 @@ SUPPORTED_STYLE_SOURCES = {
     "keep",
 }
 NON_SECTION_STYLE_SOURCES = {"normal", "role_heading", "company_heading", "date_location"}
+CANONICAL_MASTER_RESUME_NAME = "Caleb Miller Master Resume.docx"
+FORBIDDEN_BASE_RESUME_FILENAMES = {
+    "Caleb Miller - New Resume.docx",
+    "Caleb Miller - Application Systems Engineer Resume.docx",
+    "Caleb Miller - New Dev resume.docx",
+}
+DEFAULT_PACKAGE_MANIFEST = "resume_package_manifest.json"
+EXPECTED_OUTPUT_SECTION_HEADERS = ("SUMMARY", "SKILLS", "WORK EXPERIENCE", "EDUCATION")
 ROLE_KEYWORDS = (
     "engineer",
     "developer",
@@ -68,6 +78,172 @@ class PatchPara:
 
 def warn(message: str) -> None:
     print(f"WARNING: {message}")
+
+
+def ensure_non_empty_file(path: Path, label: str) -> None:
+    if not path.exists():
+        raise FileNotFoundError(f"{label} not found: {path}")
+    if not path.is_file():
+        raise FileNotFoundError(f"{label} is not a file: {path}")
+    if path.stat().st_size <= 0:
+        raise ValueError(f"{label} is empty: {path}")
+
+
+def resolve_inside_root(root: Path, relative_path: str, label: str) -> Path:
+    if not isinstance(relative_path, str) or not relative_path.strip():
+        raise ValueError(f"{label} must be a non-empty relative path")
+
+    candidate = Path(relative_path)
+    if candidate.is_absolute():
+        raise ValueError(f"{label} must be relative to the package root, got absolute path: {relative_path!r}")
+
+    resolved_root = root.resolve()
+    resolved = (resolved_root / candidate).resolve()
+    if not resolved.is_relative_to(resolved_root):
+        raise ValueError(f"{label} escapes the package root: {relative_path!r}")
+    return resolved
+
+
+def validate_base_resume_path(path: Path) -> None:
+    if path.name in FORBIDDEN_BASE_RESUME_FILENAMES:
+        raise ValueError(
+            f"Forbidden base resume selected: {path.name!r}. "
+            f"The only valid base resume is {CANONICAL_MASTER_RESUME_NAME!r}."
+        )
+    if path.name != CANONICAL_MASTER_RESUME_NAME:
+        raise ValueError(
+            f"Invalid base resume selected: {path.name!r}. "
+            f"The only valid base resume is {CANONICAL_MASTER_RESUME_NAME!r}; no fallback resumes are allowed."
+        )
+    ensure_non_empty_file(path, "Master resume")
+
+
+def normalized_doc_text(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip()).upper()
+
+
+def validate_output_docx(path: Path) -> None:
+    ensure_non_empty_file(path, "Output DOCX")
+    try:
+        doc = Document(str(path))
+    except Exception as exc:
+        raise ValueError(f"Output DOCX could not be opened by python-docx: {path}") from exc
+
+    paragraph_texts = [normalized_doc_text(p.text) for p in doc.paragraphs if p.text.strip()]
+    missing = [
+        header
+        for header in EXPECTED_OUTPUT_SECTION_HEADERS
+        if not any(normalized_doc_text(header) == text for text in paragraph_texts)
+    ]
+    if missing:
+        raise ValueError(f"Output DOCX is missing expected resume section header(s): {', '.join(missing)}")
+
+
+def safe_extract_zip(zip_path: Path, destination: Path) -> None:
+    ensure_non_empty_file(zip_path, "Package ZIP")
+    try:
+        with ZipFile(zip_path) as zf:
+            bad_member = zf.testzip()
+            if bad_member is not None:
+                raise ValueError(f"ZIP validation failed at member: {bad_member}")
+            members = [info for info in zf.infolist() if info.filename and not info.is_dir()]
+            if not members:
+                raise ValueError(f"Package ZIP contains no files: {zip_path}")
+
+            root = destination.resolve()
+            for info in zf.infolist():
+                target = (root / info.filename).resolve()
+                if not target.is_relative_to(root):
+                    raise ValueError(f"Unsafe ZIP member path escapes package root: {info.filename!r}")
+            zf.extractall(destination)
+    except BadZipFile as exc:
+        raise ValueError(f"Package ZIP could not be opened: {zip_path}") from exc
+
+
+def load_package_manifest(path: Path) -> dict[str, Any]:
+    ensure_non_empty_file(path, "Package manifest")
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            manifest = json.load(f)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in package manifest: {exc}") from exc
+
+    if not isinstance(manifest, dict):
+        raise ValueError("Package manifest must be a top-level object")
+    return manifest
+
+
+def validate_package_required_files(root: Path, manifest: dict[str, Any]) -> None:
+    required_files = manifest.get("required_files")
+    if not isinstance(required_files, list) or not required_files:
+        raise ValueError("Package manifest must include a non-empty 'required_files' list")
+
+    for idx, raw_path in enumerate(required_files):
+        if not isinstance(raw_path, str):
+            raise ValueError(f"Package manifest required_files[{idx}] must be a string")
+        required_path = resolve_inside_root(root, raw_path, f"required_files[{idx}]")
+        ensure_non_empty_file(required_path, f"Required package file {raw_path!r}")
+
+
+def resolve_package_run_paths(
+    root: Path,
+    manifest: dict[str, Any],
+    *,
+    replacements_override: str | None,
+    out_override: str | None,
+) -> tuple[Path, Path, Path]:
+    master_path_raw = manifest.get("master_resume_path") or manifest.get("master_resume")
+    if not isinstance(master_path_raw, str):
+        raise ValueError("Package manifest must include string 'master_resume_path'")
+
+    src = resolve_inside_root(root, master_path_raw, "master_resume_path")
+    validate_base_resume_path(src)
+
+    replacements_raw = replacements_override or manifest.get("replacements_path") or manifest.get("replacements")
+    if not isinstance(replacements_raw, str) or not replacements_raw.strip():
+        raise ValueError("A replacements JSON path must be provided by --replacements or package manifest 'replacements_path'")
+
+    replacements_candidate = Path(replacements_raw)
+    if replacements_candidate.is_absolute():
+        replacements = replacements_candidate
+    else:
+        replacements = resolve_inside_root(root, replacements_raw, "replacements_path")
+    ensure_non_empty_file(replacements, "Replacements JSON")
+
+    out_raw = out_override or manifest.get("output_path") or "tailored_resume.docx"
+    if not isinstance(out_raw, str) or not out_raw.strip():
+        raise ValueError("Output path must be a non-empty string")
+    out = Path(out_raw)
+    if not out.is_absolute():
+        out = (Path.cwd() / out).resolve()
+
+    return src, replacements, out
+
+
+def prepare_package_run(
+    package_path: Path,
+    *,
+    manifest_name: str,
+    replacements_override: str | None,
+    out_override: str | None,
+) -> tuple[tempfile.TemporaryDirectory, Path, Path, Path]:
+    temp_dir = tempfile.TemporaryDirectory(prefix="resume_patcher_package_")
+    root = Path(temp_dir.name)
+    try:
+        safe_extract_zip(package_path, root)
+        manifest_path = resolve_inside_root(root, manifest_name, "manifest")
+        manifest = load_package_manifest(manifest_path)
+        validate_package_required_files(root, manifest)
+        src, replacements, out = resolve_package_run_paths(
+            root,
+            manifest,
+            replacements_override=replacements_override,
+            out_override=out_override,
+        )
+    except Exception:
+        temp_dir.cleanup()
+        raise
+    return temp_dir, src, replacements, out
 
 
 def apply_resume_bullet_indent(paragraph: Paragraph) -> None:
@@ -852,10 +1028,7 @@ def apply_named_blocks(
 
 
 def load_replacements(path: Path) -> dict[str, Any]:
-    if not path.exists():
-        raise FileNotFoundError(f"Replacements JSON not found: {path}")
-    if not path.is_file():
-        raise FileNotFoundError(f"Replacements path is not a file: {path}")
+    ensure_non_empty_file(path, "Replacements JSON")
 
     try:
         with path.open("r", encoding="utf-8") as f:
@@ -869,21 +1042,10 @@ def load_replacements(path: Path) -> dict[str, Any]:
     return data
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Patch a resume DOCX using external replacements JSON while preserving formatting.")
-    parser.add_argument("--src", required=True, help="Source DOCX resume")
-    parser.add_argument("--replacements", required=True, help="Replacements JSON path")
-    parser.add_argument("--out", required=True, help="Output DOCX path")
-    args = parser.parse_args()
-
-    src = Path(args.src)
-    replacements_path = Path(args.replacements)
-    out = Path(args.out)
-
-    if not src.exists() or not src.is_file():
-        raise FileNotFoundError(f"Source DOCX not found: {src}")
-
+def run_patch(src: Path, replacements_path: Path, out: Path) -> dict[str, int]:
+    validate_base_resume_path(src)
     replacements = load_replacements(replacements_path)
+
     doc = Document(str(src))
     if not doc.paragraphs:
         raise ValueError("Source DOCX contains no paragraphs")
@@ -921,6 +1083,45 @@ def main() -> None:
 
     out.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(out))
+    validate_output_docx(out)
+    return applied_counts
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Patch a resume DOCX using external replacements JSON while preserving formatting.")
+    parser.add_argument("--package", help="ZIP package containing the master resume and package manifest")
+    parser.add_argument("--manifest", default=DEFAULT_PACKAGE_MANIFEST, help="Package-relative manifest path for --package mode")
+    parser.add_argument("--src", help="Source DOCX resume for direct mode")
+    parser.add_argument("--replacements", help="Replacements JSON path")
+    parser.add_argument("--out", help="Output DOCX path")
+    args = parser.parse_args()
+
+    package_temp = None
+    try:
+        if args.package:
+            if args.src is not None:
+                raise ValueError("--src is not allowed in package mode; the package manifest selects the base resume")
+            package_temp, src, replacements_path, out = prepare_package_run(
+                Path(args.package),
+                manifest_name=args.manifest,
+                replacements_override=args.replacements,
+                out_override=args.out,
+            )
+        else:
+            missing = [name for name in ("src", "replacements", "out") if getattr(args, name) is None]
+            if missing:
+                raise ValueError(
+                    "Direct mode requires --src, --replacements, and --out. "
+                    "Package mode requires --package."
+                )
+            src = Path(args.src)
+            replacements_path = Path(args.replacements)
+            out = Path(args.out)
+
+        applied_counts = run_patch(src, replacements_path, out)
+    finally:
+        if package_temp is not None:
+            package_temp.cleanup()
 
     applied_summary = ", ".join(f"{k}={v}" for k, v in applied_counts.items())
     print(f"Wrote {out}")

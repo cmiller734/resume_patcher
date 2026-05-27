@@ -7,7 +7,7 @@
     "consumed_by": "AI/chatbot layer only",
     "not_consumed_by": "resume_patcher.py"
   },
-  "profile_name": "Resume Tailoring Preferences - Specificity Update",
+  "profile_name": "Resume Tailoring Preferences - Specificity + Product Workflow Positioning",
   "purpose": "Guidance for the AI resume generation layer before creating replacements.json. This file should not be enforced by the DOCX patcher itself.",
   "architecture_principles": {
     "separation_of_concerns": "The Python patcher should only perform deterministic document conversion: master_resume.docx + replacements.json -> tailored_resume.docx.",
@@ -42,7 +42,10 @@
       "bullets that describe what the target role does rather than what the user actually did",
       "abstract handoff/documentation lines that could be written for any implementation or support candidate",
       "controlled-test-environment phrasing unless tied to a specific product, tool, customer environment, bug, or internal reproduction workflow the user actually used",
-      "over-polished verbs and stacked qualifiers that make true experience sound fabricated"
+      "over-polished verbs and stacked qualifiers that make true experience sound fabricated",
+      "minimizing independent product and automation work as mere side projects",
+      "describing AI-assisted development in a way that implies the AI did the hard work",
+      "burying the user's product/workflow automation pattern beneath ordinary support-tool bullet points when the role values implementation, troubleshooting, automation, or systems thinking"
     ],
     "prioritize": [
       "STAR-style substance where possible",
@@ -59,7 +62,10 @@
       "source-first tailoring: begin with the user's actual tools, systems, customers, incidents, and outcomes, then lightly align to the JD",
       "distinctive proof points that make the user's profile memorable rather than merely compliant",
       "bullets that sound like they were written by someone who actually did the work",
-      "specific Apica support and implementation evidence before generic Tier 2 support language"
+      "specific Apica support and implementation evidence before generic Tier 2 support language",
+      "framing independent product and automation work as a repeatable pattern of workflow discovery, technical translation, product implementation, and production-style validation",
+      "positioning Subscription Everything, Resume Patcher, Newlyweds, and Canvas Roadshow as evidence of product-minded implementation ability when relevant",
+      "showing that AI-assisted development is used as a force multiplier while the user owns architecture, debugging, validation, QA, documentation, and final quality"
     ]
   },
   "bullet_preferences": {
@@ -86,12 +92,14 @@
     "over_tailoring_guardrail": "Tailoring should sharpen the resume toward the job, not erase the user's specific work history. If a tailored bullet could describe almost any support or implementation candidate, rewrite it closer to the master resume.",
     "source_first_tailoring": "When tailoring, first identify the strongest real source-resume evidence for the target requirement. Only then add role-relevant keywords. Do not create bullets by translating the JD into resume language.",
     "jd_mirroring_guardrail": "If a bullet mainly proves that the writer read the job description, reject it. A strong bullet should prove a specific work history: product, environment, tool, customer type, incident, metric, or artifact.",
-    "distinctiveness_requirement": "For every major role, preserve at least one distinctive detail that makes the user different from a generic candidate, such as Apica observability, monitoring agents, Windows/Linux on-prem deployments, Postman/API troubleshooting, SQL/log analysis, Zendesk tooling, OpenTelemetry, customer documentation rewrites, or WooCommerce subscription workflow ownership."
+    "distinctiveness_requirement": "For every major role, preserve at least one distinctive detail that makes the user different from a generic candidate, such as Apica observability, monitoring agents, Windows/Linux on-prem deployments, Postman/API troubleshooting, SQL/log analysis, Zendesk tooling, OpenTelemetry, customer documentation rewrites, or WooCommerce subscription workflow ownership.",
+    "independent_product_work": "Treat recent independent product and automation work as a major proof block when relevant. The narrative is not 'freelance filler'; it is evidence that the user can identify workflow pain, design a technical solution, build it, debug edge cases, document it, and validate it like production software."
   },
   "default_positioning": {
     "primary_lane": "Technical/Application Support, Implementation, Professional Services, and customer-facing SaaS systems work.",
     "secondary_lane": "WordPress/WooCommerce and custom web systems should be framed as implementation, product operations, troubleshooting, and workflow ownership when appropriate, not merely coding.",
-    "preferred_framing": "Support Engineer+ / implementation-focused technical operator who can bridge customers, systems, and engineering."
+    "preferred_framing": "Support Engineer+ / implementation-focused technical operator who can bridge customers, systems, and engineering.",
+    "product_workflow_automation_lane": "A repeatable strength in identifying broken workflows, translating messy human requirements into technical systems, building practical tools, and validating them like production software."
   },
   "ats_strategy": {
     "include_relevant_keywords": true,
@@ -104,7 +112,8 @@
     "review_step": "Render-check the DOCX when possible before delivery.",
     "fidelity_check": "Before finalizing, check that the resume still sounds like the user's master resume: specific tools, real projects, concrete incidents, and credible wording should remain visible.",
     "generic_bullet_check": "Replace or revise bullets that sound polished but generic, especially if they do not clearly say what the user did.",
-    "jd_shape_check": "Before finalizing replacements.json, scan for bullets that sound like a generic paraphrase of the JD. Revise them until each bullet contains a concrete source-resume anchor such as Apica, Windows/Linux agents, Postman, SQL/logs, Zendesk, JIRA, SSL/TLS, WordPress/WooCommerce, customer dashboards, documentation rewrites, or a specific customer/environment outcome."
+    "jd_shape_check": "Before finalizing replacements.json, scan for bullets that sound like a generic paraphrase of the JD. Revise them until each bullet contains a concrete source-resume anchor such as Apica, Windows/Linux agents, Postman, SQL/logs, Zendesk, JIRA, SSL/TLS, WordPress/WooCommerce, customer dashboards, documentation rewrites, or a specific customer/environment outcome.",
+    "product_workflow_positioning_check": "Before finalizing a tailored resume, check whether the target role would benefit from emphasizing the user's independent product/workflow automation pattern. If yes, ensure the resume positively frames Subscription Everything, Resume Patcher, Newlyweds, and/or Canvas Roadshow as credible implementation and systems-building evidence rather than filler."
   },
   "bullet_specificity_strategy": {
     "principle": "Prefer concrete, source-resume-grounded bullets over abstract role summaries.",
@@ -184,5 +193,64 @@
       "customer_service": "Sole U.S. technical support lead, enterprise customer ownership, training workshops, high-value customer communication during production issues.",
       "windows_operating_systems": "Windows Server, services, IIS, SSL/TLS, registry/configuration-adjacent troubleshooting, monitoring agents, customer infrastructure constraints."
     }
+  },
+  "independent_product_automation_positioning": {
+    "principle": "Treat the user's recent independent product and automation work as one of the strongest career achievements of the past year, not as gap filler or side-project filler.",
+    "core_thesis": "The user repeatedly identifies broken workflows, translates messy human requirements into technical systems, builds practical tools around them, and validates those tools like production software.",
+    "projects_to_frame_as_pattern": [
+      {
+        "name": "Newlyweds",
+        "positioning": "A workflow/product implementation project that turned a real-world service or event need into a clearer usable web/customer experience."
+      },
+      {
+        "name": "Canvas Roadshow",
+        "positioning": "A workflow and booking/customer-experience project showing the user's ability to structure messy operational requirements into a practical technical system."
+      },
+      {
+        "name": "Subscription Everything",
+        "positioning": "A production WooCommerce plugin/product built to solve real subscription lifecycle gaps, including customer-facing update workflows, configurable subscription behavior, testing, edge-case handling, and production-safe release thinking."
+      },
+      {
+        "name": "Resume Patcher",
+        "positioning": "A document automation/productivity system combining AI-assisted tailoring decisions with deterministic Python DOCX patching, package validation, formatting preservation, and QA."
+      }
+    ],
+    "preferred_resume_framing": [
+      "Independent Product & Workflow Automation",
+      "Product-minded implementation and support engineer",
+      "Workflow automation, product troubleshooting, and systems implementation",
+      "AI-assisted development used as an implementation accelerator, with the user owning architecture, validation, QA, and final quality"
+    ],
+    "avoid_framing_as": [
+      "side projects",
+      "gap filler",
+      "AI wrote the code",
+      "basic freelance web work",
+      "generic WordPress development",
+      "hobby projects",
+      "unvalidated experimentation"
+    ],
+    "when_to_emphasize": [
+      "Implementation Engineer roles",
+      "Professional Services roles",
+      "Technical Support Engineer roles",
+      "Application Support roles",
+      "Product Support roles",
+      "Solutions Engineer roles",
+      "Automation-heavy roles",
+      "Customer workflow or systems troubleshooting roles",
+      "Roles that value AI-assisted development, internal tooling, documentation, QA, or operational improvement"
+    ],
+    "resume_summary_guidance": "When relevant, the summary may describe the user as a product-minded technical support, implementation, or systems engineer who turns broken workflows into reliable technical systems using customer discovery, troubleshooting, automation, documentation, and production-style validation.",
+    "experience_guidance": "The current Pearl/Freelance/Independent Product work should usually be framed as a coherent pattern of workflow automation and product implementation. It should explain what the user built, what workflow pain it solved, what systems/tools were involved, and how the user validated or supported the result.",
+    "ai_assisted_development_guidance": "Frame AI-assisted development as modern technical orchestration, not as a shortcut. Emphasize that the user uses AI/Codex/LLMs to accelerate implementation and explore options while independently owning architecture, debugging, test design, deterministic automation, packaging, validation, and final quality.",
+    "interview_positioning": "The user is strongest in the messy middle where users know something is broken but the technical shape of the solution is not obvious yet. He can clarify the problem, build the system, test edge cases, document the workflow, and support the user after launch.",
+    "example_resume_bullets": [
+      "Identified broken customer and business workflows, translated ambiguous requirements into usable technical systems, and validated the resulting tools through hands-on testing, documentation, and production-style QA.",
+      "Built Subscription Everything, a WooCommerce extension addressing subscription lifecycle gaps around configurable boxes, mid-cycle updates, customer self-service, and production-safe workflow changes.",
+      "Designed a Resume Patcher automation workflow combining AI-assisted content strategy with deterministic Python DOCX patching, package validation, and formatting-preservation safeguards.",
+      "Used AI-assisted development tools as an implementation accelerator while retaining ownership of architecture, debugging, regression testing, documentation, and release quality.",
+      "Turned repeated client workflow problems into maintainable web, automation, and product systems across WordPress, WooCommerce, Python, JSON configuration, and document-processing pipelines."
+    ]
   }
 }

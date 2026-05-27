@@ -79,6 +79,8 @@ pip install -r requirements.txt
 
 ## Usage
 
+Direct mode:
+
 ```bash
 python3 resume_patcher.py --src "/path/to/master_resume.docx" --replacements "/path/to/replacements.json" --out "/path/to/tailored_resume.docx"
 ```
@@ -89,7 +91,46 @@ Arguments:
 - `--replacements`: Replacement JSON path
 - `--out`: Output resume `.docx`
 
+Direct mode also validates that `--src` is exactly `Caleb Miller Master Resume.docx`.
+
+Package mode:
+
+```bash
+python3 resume_patcher.py --package "/path/to/resume_package.zip" --out "/path/to/tailored_resume.docx"
+```
+
+Package mode extracts the ZIP to a temporary directory, reads `resume_package_manifest.json`, validates the package, and then runs the patcher. It does not search the working directory for fallback resumes or similarly named files.
+
 The script prints `Wrote <output_path>` on success.
+
+## Package Manifest
+
+ZIP packages should include `resume_package_manifest.json` at the package root. The manifest declares the exact package paths the patcher is allowed to use.
+
+```json
+{
+  "schema_version": "1.0",
+  "master_resume_path": "Caleb Miller Master Resume.docx",
+  "replacements_path": "replacements.json",
+  "output_path": "tailored_resume.docx",
+  "required_files": [
+    "Caleb Miller Master Resume.docx",
+    "resume_patcher.py",
+    "resume_preferences.json",
+    "requirements.txt",
+    "README.md",
+    "CHATBOT_POLICY.md"
+  ]
+}
+```
+
+The only valid base resume filename is `Caleb Miller Master Resume.docx`. The patcher fails immediately if the selected base resume is any other filename, including:
+
+- `Caleb Miller - New Resume.docx`
+- `Caleb Miller - Application Systems Engineer Resume.docx`
+- `Caleb Miller - New Dev resume.docx`
+
+Preflight validation checks that the ZIP opens, extraction is safe, required files exist and are non-empty, the manifest-selected master resume exists, and the selected base resume is the canonical master resume. After patching, the output DOCX must exist, be non-empty, open with `python-docx`, and contain expected section headers: `SUMMARY`, `SKILLS`, `WORK EXPERIENCE`, and `EDUCATION`.
 
 ## Replacement JSON Styles
 
@@ -159,9 +200,10 @@ Run the focused Work Experience formatting regression after installing dependenc
 
 ```bash
 python3 tests/regression_work_experience_styles.py
+python3 tests/regression_package_preflight.py
 ```
 
-The check replaces `Work EXPERIENCE` through `EDUCATION`, then inspects the generated DOCX XML to verify that inserted company, role, and date/location paragraphs are not Heading 1, the retained section heading is Heading 1, and inserted bullets keep bullet/list formatting.
+The Work Experience check replaces `Work EXPERIENCE` through `EDUCATION`, then inspects the generated DOCX XML to verify that inserted role/date, bullet, and skills formatting is copied from the master templates. The package preflight check builds temporary ZIP packages and verifies that the canonical master resume succeeds while a forbidden base resume fails before output generation.
 
 ## Troubleshooting
 
