@@ -55,6 +55,7 @@ FORBIDDEN_BASE_RESUME_FILENAMES = {
     "Caleb Miller - New Dev resume.docx",
 }
 DEFAULT_PACKAGE_MANIFEST = "resume_package_manifest.json"
+REQUIRED_PACKAGE_ROOT = "resume_patcher"
 EXPECTED_OUTPUT_SECTION_HEADERS = ("SUMMARY", "SKILLS", "WORK EXPERIENCE", "EDUCATION")
 ROLE_KEYWORDS = (
     "engineer",
@@ -139,6 +140,16 @@ def validate_output_docx(path: Path) -> None:
         raise ValueError(f"Output DOCX is missing expected resume section header(s): {', '.join(missing)}")
 
 
+def is_ignored_package_artifact(path: str) -> bool:
+    parts = [part for part in Path(path).parts if part not in {"", "."}]
+    if not parts:
+        return True
+    for part in parts:
+        if part == "__MACOSX" or part == ".DS_Store" or part.startswith("._") or part.startswith("~$"):
+            return True
+    return False
+
+
 def safe_extract_zip(zip_path: Path, destination: Path) -> None:
     ensure_non_empty_file(zip_path, "Package ZIP")
     try:
@@ -158,6 +169,28 @@ def safe_extract_zip(zip_path: Path, destination: Path) -> None:
             zf.extractall(destination)
     except BadZipFile as exc:
         raise ValueError(f"Package ZIP could not be opened: {zip_path}") from exc
+
+
+def resolve_package_root(extraction_root: Path) -> Path:
+    real_top_level = {
+        Path(path).parts[0]
+        for path in (str(p.relative_to(extraction_root)) for p in extraction_root.rglob("*"))
+        if not is_ignored_package_artifact(path)
+    }
+    if REQUIRED_PACKAGE_ROOT not in real_top_level:
+        raise FileNotFoundError(f"Required package root folder missing: {REQUIRED_PACKAGE_ROOT}/")
+
+    unexpected = sorted(name for name in real_top_level if name != REQUIRED_PACKAGE_ROOT)
+    if unexpected:
+        raise ValueError(
+            f"Unexpected real top-level package item(s): {', '.join(unexpected)}. "
+            f"The only real top-level project folder must be {REQUIRED_PACKAGE_ROOT}/."
+        )
+
+    package_root = extraction_root / REQUIRED_PACKAGE_ROOT
+    if not package_root.exists() or not package_root.is_dir():
+        raise FileNotFoundError(f"Required package root is not a directory: {REQUIRED_PACKAGE_ROOT}/")
+    return package_root
 
 
 def load_package_manifest(path: Path) -> dict[str, Any]:
@@ -228,14 +261,15 @@ def prepare_package_run(
     out_override: str | None,
 ) -> tuple[tempfile.TemporaryDirectory, Path, Path, Path]:
     temp_dir = tempfile.TemporaryDirectory(prefix="resume_patcher_package_")
-    root = Path(temp_dir.name)
+    extraction_root = Path(temp_dir.name)
     try:
-        safe_extract_zip(package_path, root)
-        manifest_path = resolve_inside_root(root, manifest_name, "manifest")
+        safe_extract_zip(package_path, extraction_root)
+        package_root = resolve_package_root(extraction_root)
+        manifest_path = resolve_inside_root(package_root, manifest_name, "manifest")
         manifest = load_package_manifest(manifest_path)
-        validate_package_required_files(root, manifest)
+        validate_package_required_files(package_root, manifest)
         src, replacements, out = resolve_package_run_paths(
-            root,
+            package_root,
             manifest,
             replacements_override=replacements_override,
             out_override=out_override,

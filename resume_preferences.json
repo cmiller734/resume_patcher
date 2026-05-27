@@ -25,6 +25,7 @@
       "human-readable"
     ],
     "avoid": [
+      "overly complex language and excessive use of comma-separated lists, e.g. 'Performed internal user onboarding, offboarding, password resets, VPN troubleshooting, permissions, and access management using Active Directory, Office 365 Admin Center, Okta, AWS IAM/user permissions, and related enterprise tools'",
       "generic AI-sounding language",
       "buzzword stuffing",
       "vague collaboration filler",
@@ -61,7 +62,7 @@
       "specific technical texture from the master resume before adding generic role keywords",
       "source-first tailoring: begin with the user's actual tools, systems, customers, incidents, and outcomes, then lightly align to the JD",
       "distinctive proof points that make the user's profile memorable rather than merely compliant",
-      "bullets that sound like they were written by someone who actually did the work",
+      "bullets that sound like they were written by someone who actually did the work, e.g. 'Managed PKI for a custom Apica desktop apps hosted on Windows Server, using Microsoft Certificates MMC Snap-in'",
       "specific Apica support and implementation evidence before generic Tier 2 support language",
       "framing independent product and automation work as a repeatable pattern of workflow discovery, technical translation, product implementation, and production-style validation",
       "positioning Subscription Everything, Resume Patcher, Newlyweds, and Canvas Roadshow as evidence of product-minded implementation ability when relevant",

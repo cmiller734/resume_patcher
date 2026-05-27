@@ -99,13 +99,13 @@ Package mode:
 python3 resume_patcher.py --package "/path/to/resume_package.zip" --out "/path/to/tailored_resume.docx"
 ```
 
-Package mode extracts the ZIP to a temporary directory, reads `resume_package_manifest.json`, validates the package, and then runs the patcher. It does not search the working directory for fallback resumes or similarly named files.
+Package mode extracts the ZIP to a temporary directory, requires a real top-level `resume_patcher/` folder, reads `resume_patcher/resume_package_manifest.json`, validates the package, and then runs the patcher. It ignores macOS and Word metadata artifacts such as `__MACOSX/`, `.DS_Store`, `._*`, and `~$*` while validating the top-level package shape. It does not search the working directory for fallback resumes or similarly named files.
 
 The script prints `Wrote <output_path>` on success.
 
 ## Package Manifest
 
-ZIP packages should include `resume_package_manifest.json` at the package root. The manifest declares the exact package paths the patcher is allowed to use.
+ZIP packages should include `resume_package_manifest.json` inside the required `resume_patcher/` package root. The manifest declares the exact package paths the patcher is allowed to use, relative to `resume_patcher/`.
 
 ```json
 {
@@ -130,7 +130,7 @@ The only valid base resume filename is `Caleb Miller Master Resume.docx`. The pa
 - `Caleb Miller - Application Systems Engineer Resume.docx`
 - `Caleb Miller - New Dev resume.docx`
 
-Preflight validation checks that the ZIP opens, extraction is safe, required files exist and are non-empty, the manifest-selected master resume exists, and the selected base resume is the canonical master resume. After patching, the output DOCX must exist, be non-empty, open with `python-docx`, and contain expected section headers: `SUMMARY`, `SKILLS`, `WORK EXPERIENCE`, and `EDUCATION`.
+Preflight validation checks that the ZIP opens, extraction is safe, the only real top-level project folder is `resume_patcher/`, required files exist and are non-empty, the manifest-selected master resume exists, and the selected base resume is the canonical master resume. After patching, the output DOCX must exist, be non-empty, open with `python-docx`, and contain expected section headers: `SUMMARY`, `SKILLS`, `WORK EXPERIENCE`, and `EDUCATION`.
 
 ## Replacement JSON Styles
 
