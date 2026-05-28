@@ -61,18 +61,20 @@
       "What should the reader believe before reaching Skills and Experience?"
     ],
     "guidance": [
+      "The summary needs to be a career summary first. It needs to provide a high-level overview of who I am as a candidate. Subtle job description matching is good, but it should not change wildly from job to job.",
       "Use 2-4 concise sentences.",
       "Lead with the strongest role-relevant operating pattern, not a list of tools.",
       "Include only a few credibility signals; put detailed tool coverage in Skills and Experience.",
       "When the JD gives strong human-success language, translate it into the user's real experience."
     ],
     "avoid": [
+      "overly tailoring to match Job Description completely",
       "compressed Skills sections",
       "15-25 tools in one paragraph",
       "dense comma-separated technology lists",
       "using the Summary mainly for ATS matching"
     ],
-    "example_for_scale_support_roles": "Senior technical support and implementation engineer who is strongest in ambiguous customer issues: digging until the root cause is clear, communicating precisely under pressure, and turning repeat problems into better documentation, tooling, and support workflows. Brings 9 years of enterprise SaaS experience and a practical implementation mindset to help technical support teams scale without losing customer trust."
+    "example_for_scale_support_roles": "Technical Support Engineer with 9 years of experience supporting enterprise SaaS platforms, customer-facing application environments, and production business systems. Strong background owning support cases through resolution, developing deep expertise in a SaaS product set, troubleshooting Windows and Linux environments, and partnering with engineering teams to diagnose product issues. Experienced with REST APIs, SQL, logs, Active Directory, Office 365, SSL/TLS, and customer training in B2B software environments. Combines 6 years of enterprise SaaS support with 3 years of software development experience, bringing rare strength to the overlap between customer-facing troubleshooting and engineering-level problem solving."
   },
   "skills_strategy": {
     "principle": "The Skills section carries most ATS/tool coverage. Keep it accurate, scannable, and role-aligned without becoming bloated.",
