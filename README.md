@@ -2,7 +2,7 @@
 
 An AI-assisted resume tailoring workflow that combines chatbot judgment with deterministic DOCX patching.
 
-This repository is designed to be used with an AI chatbot. The chatbot analyzes a target job description and generates substitution/replacement content. If `resume_preferences.json` is present, the chatbot uses it by default unless the user asks not to. Then `resume_patcher.py` performs the document conversion step by applying updates to a source `.docx` while preserving formatting patterns.
+This repository is designed to be used with an AI chatbot. The chatbot analyzes a target job description and generates substitution/replacement content. If `resume_preferences.json` is present, the chatbot uses it by default unless the user asks not to. Then `resume_patcher.py` performs the document conversion step by applying updates to a source `.docx` while preserving formatting patterns. The same workflow can render a generated cover letter from `cover_letter.json`; the chatbot writes the letter, and the patcher only clears and rewrites the DOCX mechanically.
 
 ## Overview
 
@@ -24,6 +24,8 @@ This is also not designed to cheat the system. If you make up experience on your
 
 - `resume_patcher.py`: Deterministic DOCX conversion/patching engine.
 - `resume_preferences.json` (optional): User preference profile for AI generation decisions (tone, bullet density, framing, ATS balance, credibility guardrails).
+- `COVER_LETTER_POLICY.md`: Chatbot-layer instructions for producing `cover_letter.json`.
+- `cover_letter_preferences.json`: Optional chatbot-layer cover letter preferences.
 - `requirements.txt`: Python dependency list for the patcher.
 
 ## App Architecture
@@ -35,12 +37,14 @@ This workflow intentionally separates responsibilities:
 - Uses `resume_preferences.json` by default when present, unless the user asks to ignore it for that run.
 - Produces proposed substitutions/revisions (optionally as structured JSON for review).
 - Creates `replacements.json` before any patching step.
+- Optionally creates `cover_letter.json` for the cover letter output.
 - Supports human-in-the-loop review before patching.
 
 2. Conversion Layer (`resume_patcher.py`):
 - Applies deterministic document conversion updates to the `.docx`.
 - Preserves paragraph/run formatting and layout style.
 - Outputs a final tailored `.docx`.
+- Optionally opens `Caleb Miller Cover Letter.docx`, discards existing body text, writes the generated `cover_letter.json` paragraphs, and validates the output DOCX.
 
 This separation keeps generation flexible and context-aware while keeping document transformation repeatable.
 
@@ -63,6 +67,7 @@ This separation keeps generation flexible and context-aware while keeping docume
 - Preserves style by cloning paragraph/run formatting from template paragraphs in the source document.
 - Handles multi-line paragraph formatting (for header/title + date/location line breaks).
 - Writes the result to a new output `.docx` path.
+- Renders final cover letter paragraphs from `cover_letter.json` without using old cover letter prose as content guidance.
 
 It should remain a conversion tool only. It should not enforce resume writing rules, tone, strategy, bullet-count policy, or ATS/recruiter optimization logic.
 
@@ -93,6 +98,20 @@ Arguments:
 
 Direct mode also validates that `--src` is exactly `Caleb Miller Master Resume.docx`.
 
+Direct mode can also render a cover letter when `--cover-letter-json` is provided:
+
+```bash
+python3 resume_patcher.py \
+  --src "Caleb Miller Master Resume.docx" \
+  --replacements "replacements.json" \
+  --out "tailored_resume.docx" \
+  --cover-letter-json "cover_letter.json" \
+  --cover-letter-docx "Caleb Miller Cover Letter.docx" \
+  --cover-letter-out "Caleb Miller Cover Letter.docx"
+```
+
+The cover letter DOCX path is a writable document, not a content master. Existing cover letter prose is ignored and removed.
+
 Package mode:
 
 ```bash
@@ -113,13 +132,23 @@ ZIP packages should include `manifest.json` inside the required `resume_patcher/
   "master_resume_path": "Caleb Miller Master Resume.docx",
   "replacements_path": "replacements.json",
   "output_path": "tailored_resume.docx",
+  "cover_letter": {
+    "docx_path": "Caleb Miller Cover Letter.docx",
+    "json_path": "cover_letter.json",
+    "output_path": "Caleb Miller Cover Letter.docx",
+    "policy_path": "COVER_LETTER_POLICY.md",
+    "preferences_path": "cover_letter_preferences.json"
+  },
   "required_files": [
     "Caleb Miller Master Resume.docx",
+    "Caleb Miller Cover Letter.docx",
     "resume_patcher.py",
     "resume_preferences.json",
+    "cover_letter_preferences.json",
     "requirements.txt",
     "README.md",
-    "CHATBOT_POLICY.md"
+    "CHATBOT_POLICY.md",
+    "COVER_LETTER_POLICY.md"
   ]
 }
 ```
@@ -131,6 +160,8 @@ The only valid base resume filename is `Caleb Miller Master Resume.docx`. The pa
 - `Caleb Miller - New Dev resume.docx`
 
 Preflight validation checks that the ZIP opens, extraction is safe, the only real top-level project folder is `resume_patcher/`, required files exist and are non-empty, the manifest-selected master resume exists, and the selected base resume is the canonical master resume. After patching, the output DOCX must exist, be non-empty, open with `python-docx`, and contain expected section headers: `SUMMARY`, `SKILLS`, `WORK EXPERIENCE`, and `EDUCATION`.
+
+When the manifest includes `cover_letter`, package mode also validates the declared cover letter DOCX, support files, and `cover_letter.json`. The cover letter output is written to `cover_letter.output_path`, resolved outside the temporary extraction directory when the path is relative.
 
 ## Replacement JSON Styles
 
@@ -187,17 +218,37 @@ The legacy key `replacement_paragraphs` is still supported; `content` is accepte
 
 The patcher renders category lines into the existing Skills section while copying paragraph and run formatting from the master resume's Skills templates. Malformed structured entries fail with a validation error instead of being skipped silently.
 
+## Cover Letter JSON
+
+The chatbot owns all cover letter writing decisions. The patcher accepts only final paragraph text:
+
+```json
+{
+  "cover_letter": {
+    "paragraphs": [
+      "Dear Hiring Team,",
+      "Body paragraph one...",
+      "Body paragraph two...",
+      "Sincerely\nCaleb Miller"
+    ]
+  }
+}
+```
+
+`cover_letter.paragraphs` must be a non-empty list of non-empty strings. The patcher fails clearly if the JSON is malformed, contains double hyphens (`--`), or leaves unresolved placeholders such as `{{COMPANY}}`. It does not rewrite or repair the text.
+
 ## End-to-End AI Workflow
 
 1. Provide the chatbot with:
 - Target job description
 - Source resume `.docx`
 - Optional `resume_preferences.json`
+- Optional `cover_letter_preferences.json` and live cover letter instructions
 
 2. Ask the chatbot to:
 - Propose tailored substitutions aligned with your request
 - Keep edits truthful and role-relevant
-- Return a reviewed patch plan and `replacements.json`
+- Return a reviewed patch plan, `replacements.json`, and optionally `cover_letter.json`
 
 3. Run `resume_patcher.py` to generate the tailored output `.docx`.
 
@@ -223,9 +274,10 @@ Run the focused Work Experience formatting regression after installing dependenc
 python3 tests/regression_work_experience_styles.py
 python3 tests/regression_package_preflight.py
 python3 tests/regression_structured_skills.py
+python3 tests/regression_cover_letter.py
 ```
 
-The Work Experience check replaces `Work EXPERIENCE` through `EDUCATION`, then inspects the generated DOCX XML to verify that inserted role/date, bullet, and skills formatting is copied from the master templates. The package preflight check builds temporary ZIP packages and verifies that the canonical master resume succeeds while a forbidden base resume fails before output generation. The structured Skills check verifies structured input, extra paragraph insertion/removal, preformatted string input, and malformed input failure.
+The Work Experience check replaces `Work EXPERIENCE` through `EDUCATION`, then inspects the generated DOCX XML to verify that inserted role/date, bullet, and skills formatting is copied from the master templates. The package preflight check builds temporary ZIP packages and verifies that the canonical master resume succeeds while a forbidden base resume fails before output generation. The structured Skills check verifies structured input, extra paragraph insertion/removal, preformatted string input, and malformed input failure. The cover letter check verifies JSON rendering, old body text removal, mechanical validation, and package-mode output persistence.
 
 ## Troubleshooting
 

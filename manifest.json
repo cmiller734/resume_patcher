@@ -3,12 +3,22 @@
   "master_resume_path": "Caleb Miller Master Resume.docx",
   "replacements_path": "replacements.json",
   "output_path": "tailored_resume.docx",
+  "cover_letter": {
+    "docx_path": "Caleb Miller Cover Letter.docx",
+    "json_path": "cover_letter.json",
+    "output_path": "Caleb Miller Cover Letter.docx",
+    "policy_path": "COVER_LETTER_POLICY.md",
+    "preferences_path": "cover_letter_preferences.json"
+  },
   "required_files": [
     "Caleb Miller Master Resume.docx",
+    "Caleb Miller Cover Letter.docx",
     "resume_patcher.py",
     "resume_preferences.json",
+    "cover_letter_preferences.json",
     "requirements.txt",
     "README.md",
-    "CHATBOT_POLICY.md"
+    "CHATBOT_POLICY.md",
+    "COVER_LETTER_POLICY.md"
   ]
 }

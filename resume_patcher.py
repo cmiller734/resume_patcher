@@ -49,6 +49,7 @@ SUPPORTED_STYLE_SOURCES = {
 }
 NON_SECTION_STYLE_SOURCES = {"normal", "role_heading", "company_heading", "date_location"}
 CANONICAL_MASTER_RESUME_NAME = "Caleb Miller Master Resume.docx"
+CANONICAL_COVER_LETTER_NAME = "Caleb Miller Cover Letter.docx"
 FORBIDDEN_BASE_RESUME_FILENAMES = {
     "Caleb Miller - New Resume.docx",
     "Caleb Miller - Application Systems Engineer Resume.docx",
@@ -69,6 +70,7 @@ ROLE_KEYWORDS = (
     "manager",
     "intern",
 )
+COVER_LETTER_PLACEHOLDER_RE = re.compile(r"\{\{[^{}]+\}\}")
 
 
 @dataclass(frozen=True)
@@ -80,6 +82,13 @@ class PatchPara:
 @dataclass(frozen=True)
 class SkillLine:
     text: str
+
+
+@dataclass(frozen=True)
+class CoverLetterRun:
+    docx_path: Path
+    json_path: Path
+    output_path: Path
 
 
 def warn(message: str) -> None:
@@ -258,13 +267,77 @@ def resolve_package_run_paths(
     return src, replacements, out
 
 
-def prepare_package_run(
+def resolve_package_file_override(root: Path, raw_path: str, label: str) -> Path:
+    candidate = Path(raw_path)
+    if candidate.is_absolute():
+        return candidate
+    return resolve_inside_root(root, raw_path, label)
+
+
+def resolve_output_path(raw_path: str, label: str) -> Path:
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        raise ValueError(f"{label} must be a non-empty string")
+
+    output = Path(raw_path)
+    if not output.is_absolute():
+        output = (Path.cwd() / output).resolve()
+    return output
+
+
+def resolve_package_cover_letter_paths(
+    root: Path,
+    manifest: dict[str, Any],
+    *,
+    cover_letter_json_override: str | None,
+    cover_letter_out_override: str | None,
+    include_manifest_cover_letter: bool = True,
+) -> CoverLetterRun | None:
+    cover_manifest = manifest.get("cover_letter")
+    if not include_manifest_cover_letter and cover_letter_json_override is None and cover_letter_out_override is None:
+        return None
+    if cover_manifest is None and cover_letter_json_override is None and cover_letter_out_override is None:
+        return None
+    if cover_manifest is None:
+        raise ValueError("Package manifest must include 'cover_letter' when cover letter rendering is requested")
+    if not isinstance(cover_manifest, dict):
+        raise ValueError("Package manifest 'cover_letter' must be an object")
+
+    docx_raw = cover_manifest.get("docx_path")
+    if not isinstance(docx_raw, str) or not docx_raw.strip():
+        raise ValueError("Package manifest cover_letter.docx_path must be a non-empty string")
+    docx_path = resolve_inside_root(root, docx_raw, "cover_letter.docx_path")
+    ensure_non_empty_file(docx_path, "Cover letter DOCX")
+
+    json_raw = cover_letter_json_override or cover_manifest.get("json_path")
+    if not isinstance(json_raw, str) or not json_raw.strip():
+        raise ValueError("Package manifest cover_letter.json_path must be a non-empty string")
+    json_path = resolve_package_file_override(root, json_raw, "cover_letter.json_path")
+    ensure_non_empty_file(json_path, "Cover letter JSON")
+
+    output_raw = cover_letter_out_override or cover_manifest.get("output_path") or docx_raw
+    output_path = resolve_output_path(output_raw, "cover_letter.output_path")
+
+    for key in ("policy_path", "preferences_path"):
+        support_raw = cover_manifest.get(key)
+        if support_raw is not None:
+            if not isinstance(support_raw, str) or not support_raw.strip():
+                raise ValueError(f"Package manifest cover_letter.{key} must be a non-empty string when provided")
+            support_path = resolve_inside_root(root, support_raw, f"cover_letter.{key}")
+            ensure_non_empty_file(support_path, f"Cover letter support file {support_raw!r}")
+
+    return CoverLetterRun(docx_path=docx_path, json_path=json_path, output_path=output_path)
+
+
+def prepare_package_run_with_cover(
     package_path: Path,
     *,
     manifest_name: str,
     replacements_override: str | None,
     out_override: str | None,
-) -> tuple[tempfile.TemporaryDirectory, Path, Path, Path]:
+    cover_letter_json_override: str | None,
+    cover_letter_out_override: str | None,
+    include_manifest_cover_letter: bool = True,
+) -> tuple[tempfile.TemporaryDirectory, Path, Path, Path, CoverLetterRun | None]:
     temp_dir = tempfile.TemporaryDirectory(prefix="resume_patcher_package_")
     extraction_root = Path(temp_dir.name)
     try:
@@ -279,9 +352,35 @@ def prepare_package_run(
             replacements_override=replacements_override,
             out_override=out_override,
         )
+        cover_letter_run = resolve_package_cover_letter_paths(
+            package_root,
+            manifest,
+            cover_letter_json_override=cover_letter_json_override,
+            cover_letter_out_override=cover_letter_out_override,
+            include_manifest_cover_letter=include_manifest_cover_letter,
+        )
     except Exception:
         temp_dir.cleanup()
         raise
+    return temp_dir, src, replacements, out, cover_letter_run
+
+
+def prepare_package_run(
+    package_path: Path,
+    *,
+    manifest_name: str,
+    replacements_override: str | None,
+    out_override: str | None,
+) -> tuple[tempfile.TemporaryDirectory, Path, Path, Path]:
+    temp_dir, src, replacements, out, _cover_letter_run = prepare_package_run_with_cover(
+        package_path,
+        manifest_name=manifest_name,
+        replacements_override=replacements_override,
+        out_override=out_override,
+        cover_letter_json_override=None,
+        cover_letter_out_override=None,
+        include_manifest_cover_letter=False,
+    )
     return temp_dir, src, replacements, out
 
 
@@ -473,6 +572,107 @@ def delete_paragraph(paragraph: Paragraph) -> None:
     p = paragraph._element
     p.getparent().remove(p)
     paragraph._p = paragraph._element = None
+
+
+def copy_paragraph_properties(destination: Paragraph, source: Paragraph) -> None:
+    existing_ppr = destination._p.pPr
+    if existing_ppr is not None:
+        destination._p.remove(existing_ppr)
+    if source._p.pPr is not None:
+        destination._p.insert(0, deepcopy(source._p.pPr))
+    destination.style = source.style
+
+
+def load_cover_letter_paragraphs(path: Path) -> list[str]:
+    ensure_non_empty_file(path, "Cover letter JSON")
+    try:
+        with path.open("r", encoding="utf-8") as f:
+            data = json.load(f)
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"Invalid JSON in cover letter file: {exc}") from exc
+
+    if not isinstance(data, dict):
+        raise ValueError("Cover letter JSON must be a top-level object")
+    cover_letter = data.get("cover_letter")
+    if not isinstance(cover_letter, dict):
+        raise ValueError("Cover letter JSON must include object 'cover_letter'")
+
+    paragraphs = cover_letter.get("paragraphs")
+    if not isinstance(paragraphs, list) or not paragraphs:
+        raise ValueError("cover_letter.paragraphs must be a non-empty list of strings")
+
+    validated: list[str] = []
+    for idx, paragraph in enumerate(paragraphs):
+        if not isinstance(paragraph, str):
+            raise ValueError(f"cover_letter.paragraphs[{idx}] must be a string")
+        if not paragraph.strip():
+            raise ValueError(f"cover_letter.paragraphs[{idx}] must not be empty")
+        if "--" in paragraph:
+            raise ValueError(f"cover_letter.paragraphs[{idx}] contains double hyphen '--'")
+        placeholder = COVER_LETTER_PLACEHOLDER_RE.search(paragraph)
+        if placeholder is not None:
+            raise ValueError(
+                f"cover_letter.paragraphs[{idx}] contains unreplaced placeholder {placeholder.group(0)!r}"
+            )
+        validated.append(paragraph)
+
+    return validated
+
+
+def validate_cover_letter_input(run: CoverLetterRun) -> list[str]:
+    ensure_non_empty_file(run.docx_path, "Cover letter DOCX")
+    try:
+        doc = Document(str(run.docx_path))
+    except Exception as exc:
+        raise ValueError(f"Cover letter DOCX could not be opened by python-docx: {run.docx_path}") from exc
+    if not doc.paragraphs:
+        raise ValueError("Cover letter DOCX contains no body paragraphs to use as a formatting template")
+
+    return load_cover_letter_paragraphs(run.json_path)
+
+
+def validate_cover_letter_output_docx(path: Path, expected_paragraphs: Sequence[str]) -> None:
+    ensure_non_empty_file(path, "Cover letter output DOCX")
+    try:
+        doc = Document(str(path))
+    except Exception as exc:
+        raise ValueError(f"Cover letter output DOCX could not be opened by python-docx: {path}") from exc
+
+    actual_paragraphs = [paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()]
+    if actual_paragraphs != list(expected_paragraphs):
+        raise ValueError("Cover letter output paragraphs did not match cover_letter.json in order")
+    for idx, paragraph in enumerate(actual_paragraphs):
+        if "--" in paragraph:
+            raise ValueError(f"Cover letter output paragraph {idx} contains double hyphen '--'")
+        placeholder = COVER_LETTER_PLACEHOLDER_RE.search(paragraph)
+        if placeholder is not None:
+            raise ValueError(f"Cover letter output paragraph {idx} contains unreplaced placeholder {placeholder.group(0)!r}")
+
+
+def render_cover_letter_docx(run: CoverLetterRun, paragraphs: Sequence[str]) -> None:
+    try:
+        doc = Document(str(run.docx_path))
+    except Exception as exc:
+        raise ValueError(f"Cover letter DOCX could not be opened by python-docx: {run.docx_path}") from exc
+    if not doc.paragraphs:
+        raise ValueError("Cover letter DOCX contains no body paragraphs to use as a formatting template")
+
+    template_source = next((paragraph for paragraph in doc.paragraphs if paragraph.text.strip()), doc.paragraphs[0])
+    template = Paragraph(deepcopy(template_source._p), template_source._parent)
+    first = doc.paragraphs[0]
+
+    for paragraph in list(doc.paragraphs[1:]):
+        delete_paragraph(paragraph)
+
+    copy_paragraph_properties(first, template)
+    set_paragraph_text_keep_format(first, paragraphs[0], template)
+    cursor = first
+    for text in paragraphs[1:]:
+        cursor = insert_paragraph_after(cursor, text, template)
+
+    run.output_path.parent.mkdir(parents=True, exist_ok=True)
+    doc.save(str(run.output_path))
+    validate_cover_letter_output_docx(run.output_path, paragraphs)
 
 
 def find_para_index(doc: Document, exact_text: str) -> int:
@@ -1221,18 +1421,27 @@ def main() -> None:
     parser.add_argument("--src", help="Source DOCX resume for direct mode")
     parser.add_argument("--replacements", help="Replacements JSON path")
     parser.add_argument("--out", help="Output DOCX path")
+    parser.add_argument("--cover-letter-docx", help="Cover letter DOCX template/path for direct mode")
+    parser.add_argument("--cover-letter-json", help="Cover letter JSON path")
+    parser.add_argument("--cover-letter-out", help="Cover letter output DOCX path")
     args = parser.parse_args()
 
     package_temp = None
+    cover_letter_run = None
+    cover_letter_paragraphs = None
     try:
         if args.package:
             if args.src is not None:
                 raise ValueError("--src is not allowed in package mode; the package manifest selects the base resume")
-            package_temp, src, replacements_path, out = prepare_package_run(
+            if args.cover_letter_docx is not None:
+                raise ValueError("--cover-letter-docx is not allowed in package mode; the package manifest selects the cover letter DOCX")
+            package_temp, src, replacements_path, out, cover_letter_run = prepare_package_run_with_cover(
                 Path(args.package),
                 manifest_name=args.manifest,
                 replacements_override=args.replacements,
                 out_override=args.out,
+                cover_letter_json_override=args.cover_letter_json,
+                cover_letter_out_override=args.cover_letter_out,
             )
         else:
             missing = [name for name in ("src", "replacements", "out") if getattr(args, name) is None]
@@ -1244,14 +1453,30 @@ def main() -> None:
             src = Path(args.src)
             replacements_path = Path(args.replacements)
             out = Path(args.out)
+            if args.cover_letter_docx is not None or args.cover_letter_json is not None or args.cover_letter_out is not None:
+                if args.cover_letter_json is None:
+                    raise ValueError("Direct mode cover letter rendering requires --cover-letter-json")
+                cover_letter_docx = Path(args.cover_letter_docx or CANONICAL_COVER_LETTER_NAME)
+                cover_letter_out = Path(args.cover_letter_out) if args.cover_letter_out else cover_letter_docx
+                cover_letter_run = CoverLetterRun(
+                    docx_path=cover_letter_docx,
+                    json_path=Path(args.cover_letter_json),
+                    output_path=cover_letter_out,
+                )
 
+        if cover_letter_run is not None:
+            cover_letter_paragraphs = validate_cover_letter_input(cover_letter_run)
         applied_counts = run_patch(src, replacements_path, out)
+        if cover_letter_run is not None:
+            render_cover_letter_docx(cover_letter_run, cover_letter_paragraphs)
     finally:
         if package_temp is not None:
             package_temp.cleanup()
 
     applied_summary = ", ".join(f"{k}={v}" for k, v in applied_counts.items())
     print(f"Wrote {out}")
+    if cover_letter_run is not None:
+        print(f"Wrote cover letter {cover_letter_run.output_path}")
     print(f"Applied operations: {applied_summary}")
 
 

@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0",
+  "scope": "chatbot_cover_letter_generation_only",
+  "default_guidance": {
+    "tone": "clear, warm, practical, and credible",
+    "length": "concise, typically 3 to 5 short paragraphs",
+    "personalization": "use job description details and live user instructions when relevant",
+    "evidence": "ground claims in the resume and truthful experience"
+  },
+  "avoid": [
+    "double hyphens",
+    "unresolved placeholders",
+    "invented company facts",
+    "invented personal motivations",
+    "generic filler that could fit any employer"
+  ],
+  "output": {
+    "file": "cover_letter.json",
+    "format": {
+      "cover_letter": {
+        "paragraphs": [
+          "non-empty paragraph strings in final order"
+        ]
+      }
+    }
+  }
+}

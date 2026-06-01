@@ -13,6 +13,7 @@ from zipfile import ZipFile
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MASTER_RESUME = "Caleb Miller Master Resume.docx"
+MASTER_COVER_LETTER = "Caleb Miller Cover Letter.docx"
 FORBIDDEN_RESUME = "Caleb Miller - New Resume.docx"
 PACKAGE_ROOT = "resume_patcher"
 
@@ -34,22 +35,49 @@ def write_replacements(path: Path) -> None:
     )
 
 
+def write_cover_letter(path: Path) -> None:
+    path.write_text(
+        json.dumps(
+            {
+                "cover_letter": {
+                    "paragraphs": [
+                        "Dear Hiring Team,",
+                        "Package preflight cover letter rendering works.",
+                        "Sincerely\nCaleb Miller",
+                    ]
+                }
+            },
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+
+def package_cover_output(zip_path: Path) -> Path:
+    return zip_path.with_suffix(".cover.docx")
+
+
 def build_package(package_dir: Path, zip_path: Path, *, forbidden_base: bool = False, flat: bool = False) -> None:
     project_dir = package_dir if flat else package_dir / PACKAGE_ROOT
     project_dir.mkdir(parents=True, exist_ok=True)
 
     for name in [
         MASTER_RESUME,
+        MASTER_COVER_LETTER,
         "resume_patcher.py",
         "resume_preferences.json",
+        "cover_letter_preferences.json",
         "requirements.txt",
         "README.md",
         "CHATBOT_POLICY.md",
+        "COVER_LETTER_POLICY.md",
     ]:
         shutil.copy2(REPO_ROOT / name, project_dir / name)
 
     write_replacements(project_dir / "replacements.json")
+    write_cover_letter(project_dir / "cover_letter.json")
     manifest = json.loads((REPO_ROOT / "manifest.json").read_text(encoding="utf-8"))
+    manifest["cover_letter"]["output_path"] = str(package_cover_output(zip_path))
 
     if forbidden_base:
         shutil.copy2(REPO_ROOT / MASTER_RESUME, project_dir / FORBIDDEN_RESUME)
@@ -119,6 +147,9 @@ def main() -> None:
             raise AssertionError(f"valid package failed:\nSTDOUT:\n{valid_result.stdout}\nSTDERR:\n{valid_result.stderr}")
         if not valid_out.exists() or valid_out.stat().st_size <= 0:
             raise AssertionError("valid package did not generate a non-empty output DOCX")
+        valid_cover_out = package_cover_output(valid_zip)
+        if not valid_cover_out.exists() or valid_cover_out.stat().st_size <= 0:
+            raise AssertionError("valid package did not generate a non-empty cover letter DOCX")
 
         forbidden_dir = tmp_path / "forbidden"
         forbidden_dir.mkdir()

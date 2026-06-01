@@ -93,7 +93,8 @@
       "Prefer one clear action per bullet over stacked abstract responsibilities.",
       "Every major role should preserve at least one distinctive detail that makes the user memorable.",
       "If a bullet could describe almost any support or implementation candidate, make it more specific or replace it.",
-      "The first bullet in every role should provide a high level overview of what the user did there, e.g. 'Provided Tier 2-3 support for Apica's SaaS observability platform and on-premise monitoring agents across Windows and Linux environments, consistently maintaining a 30-minute initial response SLA.' The first bullet point needs to answer, 'what did he do as this position?'"
+      "The first bullet in every role should provide a high level overview of what the user did there, e.g. 'Provided Tier 2-3 support for Apica's SaaS observability platform and on-premise monitoring agents across Windows and Linux environments, consistently maintaining a 30-minute initial response SLA.' The first bullet point needs to answer, 'what did he do as this position?'. For the current resume, you should not have to change the first bullet of the Pearl and Apica experience sections much. Slight wording tweaks are okay, but the viewer still needs an honest read on what my primary responsibility was.",
+      "Order bullets from role scope to proof points: start each experience with the broadest description of what I owned or supported, then list core responsibilities, then specific projects/accomplishments. For example, put a general production operations bullet above a specific project or incident bullet. Each role should read as: what I did first, specific examples second."
     ],
     "good_bullet_pattern": "Action + concrete system/tool/environment + diagnostic or implementation method + result/clarity gained.",
     "bad_to_better_example": {

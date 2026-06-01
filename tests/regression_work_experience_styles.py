@@ -142,6 +142,18 @@ def assert_bullet(paragraph: ET.Element, style_names: dict[str, str], label: str
         raise AssertionError(f"{label} did not keep bullet/list formatting; got {style_id!r}/{style_name!r}")
 
 
+def find_bullet_template(paragraphs: list[ET.Element], style_names: dict[str, str]) -> ET.Element:
+    for paragraph in paragraphs:
+        text = paragraph_text(paragraph)
+        if not text:
+            continue
+        style_id = paragraph_style_id(paragraph)
+        style_name = style_names.get(style_id, style_id).lower()
+        if paragraph_has_numbering(paragraph) or "bullet" in style_name or "list paragraph" in style_name:
+            return paragraph
+    raise AssertionError("Could not find a source bullet paragraph to use as the master template")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--src", default="Caleb Miller Master Resume.docx", help="Source DOCX")
@@ -242,10 +254,7 @@ def main() -> None:
             style_names,
             "bullet",
         )
-        source_bullet = find_paragraph_containing(
-            source_paragraphs,
-            "Troubleshot WordPress and WooCommerce as production application platforms",
-        )
+        source_bullet = find_bullet_template(source_paragraphs, source_style_names)
         assert_runs_match_format(bullet, "bullet", first_visible_run_format(source_bullet))
 
         skills = find_paragraph(
