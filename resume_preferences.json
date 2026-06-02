@@ -112,7 +112,8 @@
   },
   "section_strategy": {
     "current_work": "Use Pearl/Freelance/Independent Product work to answer what the user has been doing recently. Frame it around production systems, implementation, troubleshooting, documentation, automation, and client ownership when relevant.",
-    "older_roles": "Collapse early roles into Additional Web Development Experience or Additional IT Experience unless one is directly central to the target job."
+    "older_roles": "Collapse early roles into Additional Web Development Experience or Additional IT Experience unless one is directly central to the target job.",
+    "subscription_everything_link_policy": "Include the Subscription Everything link when it strengthens role fit by proving application implementation, workflow automation, product ownership, integrations, support tooling, AI-assisted development, or production validation. Omit or downplay it when it distracts from the primary support/application-operations story or overemphasizes founder/developer identity."
   },
   "support_team_scaling_strategy": {
     "use_when_jd_mentions": [
