@@ -85,7 +85,7 @@
       "Prefer compact keyword coverage here instead of overloading the Summary."
     ],
     "avoid": [
-      "keyword stuffing in Skills section - e.g. using 'network troubleshooting', 'secure customer environments', and other terms that apply to every IT professional"
+      "Keyword stuffing in the Skills section. Avoid broad, generic IT phrases such as 'network troubleshooting', 'secure customer environments', 'production troubleshooting', or 'technical support' when they are too vague or apply to most IT professionals. Prefer concrete tools, platforms, protocols, and defensible technical areas. Put broader concepts in experience bullets only when supported by specific examples."
     ]
   },
   "experience_strategy": {
