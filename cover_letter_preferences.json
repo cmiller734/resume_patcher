@@ -5,14 +5,20 @@
     "tone": "clear, warm, practical, and credible",
     "length": "concise, typically 3 to 5 short paragraphs",
     "personalization": "use job description details and live user instructions when relevant",
-    "evidence": "ground claims in the resume and truthful experience"
+    "evidence": "ground claims in the resume and truthful experience",
+    "company_interest": "Include one short, honest company-specific motivation point in each cover letter. This should explain what the user genuinely finds interesting or meaningful about the company's mission, product, customers, market, or real-world impact. The point should feel human and specific, not robotic, generic, gimmicky, or overly sentimental. It should answer 'why I like your company' in addition to 'why I fit the role.'",
+    "company_interest_style": "Use professional, grounded language that touches on the human or practical significance of the company's work. For mission-driven companies, connect the mission to real people, workflows, customers, or outcomes. Avoid overstating personal connection, inventing motivations, or saying the user has always dreamed of the industry. Prefer concise language such as: 'What stood out to me about [Company] is...' or 'I am drawn to [Company] because...'"
   },
   "avoid": [
     "double hyphens",
     "unresolved placeholders",
     "invented company facts",
     "invented personal motivations",
-    "generic filler that could fit any employer"
+    "generic filler that could fit any employer",
+    "cover letters that only restate resume fit without explaining why the user is interested in the company",
+    "fake-sounding passion for the employer's industry",
+    "overly sentimental company praise that feels gimmicky",
+    "company-specific paragraphs that could apply to any company after swapping the name"
   ],
   "output": {
     "file": "cover_letter.json",

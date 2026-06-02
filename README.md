@@ -13,7 +13,7 @@ This is also not designed to cheat the system. If you make up experience on your
 ## How To Use
 
 1. Clone the repository to your system.
-2. Add your master resume to the repository. Include everything relevant you have done professionally in your field in that master resume.
+2. Add your master resume to the repository. Include everything relevant you have done professionally in your field in that master resume. Remove any default resumes that come with the repository.
 3. Zip the repository and upload it to the AI chatbot of your choice.
 4. Paste the job description into the chat prompt or upload it as a separate `.txt` file.
 5. Ask the chatbot to use the attached ZIP and enclosed instructions to create your tailored resume.
