@@ -10,6 +10,7 @@
     "not_consumed_by": "resume_patcher.py"
   },
   "architecture_principles": {
+    "first_read_through": "Before starting the tailoring process, read through and assess the entire job description. Form a tailoring strategy before taking a pass at changing anything",
     "separation_of_concerns": "The AI layer decides tailoring strategy, content, positioning, and replacements.json. The Python patcher only performs deterministic DOCX conversion: master_resume.docx + replacements.json -> tailored_resume.docx.",
     "master_resume_authority": "Use the Master Resume as the source of truth for content, tone, formatting, and credibility. Do not rebuild the resume from scratch or invent a new structure unless explicitly requested.",
     "human_reader_priority": "Optimize for real recruiters and hiring managers first, while preserving natural ATS keyword coverage."
