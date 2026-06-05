@@ -136,6 +136,7 @@
   "experience_strategy": {
     "principle": "Experience bullets should prove work history, not paraphrase the JD.",
     "guidance": [
+      "Do not change role names unless there is a clear similarity between the role name I performed and the role I am applying for - e.g. you may change Technical Support Engineer to Customer Support Engineer and perform similar changes",
       "Start from the Master Resume's real accomplishments, tools, systems, customers, incidents, and outcomes.",
       "Use target-job keywords only when attached to real evidence.",
       "Prefer one clear action per bullet over stacked abstract responsibilities.",
