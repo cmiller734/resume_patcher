@@ -1,6 +1,6 @@
 {
-  "schema_version": "1.2",
-  "profile_name": "Resume Tailoring Preferences - Condensed Human-First Version",
+  "schema_version": "1.3",
+  "profile_name": "Resume Tailoring Preferences - Human-First Guardrailed Version",
   "purpose": "Guidance for the AI/chatbot layer before generating replacements.json. The Python patcher should not consume this file or make resume-writing decisions.",
   "usage": {
     "optional": true,
@@ -78,16 +78,60 @@
     "example_for_scale_support_roles": "Technical Support Engineer with 9 years of experience supporting enterprise SaaS platforms, customer-facing application environments, and production business systems. Strong background owning support cases through resolution, developing deep expertise in a SaaS product set, troubleshooting Windows and Linux environments, and partnering with engineering teams to diagnose product issues. Experienced with REST APIs, SQL, logs, Active Directory, Office 365, SSL/TLS, and customer training in B2B software environments. Combines 6 years of enterprise SaaS support with 3 years of software development experience, bringing rare strength to the overlap between customer-facing troubleshooting and engineering-level problem solving."
   },
   "skills_strategy": {
-    "principle": "The Skills section carries most ATS/tool coverage. Keep it accurate, scannable, and role-aligned without becoming bloated.",
+    "principle": "The Skills section is for compact, concrete, defensible coverage of tools, platforms, protocols, languages, formats, and environments. It is not a second Summary and not a pasted requirements checklist.",
     "guidance": [
-      "Use role-relevant categories.",
-      "Include adjacent keywords only when defensible.",
-      "Avoid repeating the same concept across too many categories.",
-      "Prefer compact keyword coverage here instead of overloading the Summary."
+      "Use role-relevant categories only when they improve scanability.",
+      "Prefer concrete nouns: tools, platforms, protocols, languages, frameworks, data formats, operating systems, cloud platforms, support platforms, and monitoring products.",
+      "Include adjacent JD keywords only when they are defensible in an interview and supported somewhere by the Master Resume or known user history.",
+      "If the JD has an 'advantages' list, include only the strongest concrete items in Skills; place softer items in bullets only when supported by specific examples.",
+      "Keep each category tight. A good category usually has 6-12 items, not a wall of every related term.",
+      "Avoid repeating the same concept across categories unless the term is genuinely used in different ways.",
+      "Prefer exact tools over broad capabilities. Example: 'Postman, REST APIs, JSON' is better than 'API troubleshooting and technical support.'",
+      "For support roles, Skills can include support platforms like Zendesk, JIRA Service Desk Management, and Confluence, but should avoid generic support phrases that could describe anyone."
     ],
-    "avoid": [
-      "Keyword stuffing in the Skills section. Avoid broad, generic IT phrases such as 'network troubleshooting', 'secure customer environments', 'production troubleshooting', or 'technical support' when they are too vague or apply to most IT professionals. Prefer concrete tools, platforms, protocols, and defensible technical areas. Put broader concepts in experience bullets only when supported by specific examples."
-    ]
+    "hard_rules": [
+      "Do not copy the job description's requirements or advantages list into Skills.",
+      "Do not use the Skills section to prove soft skills, responsibilities, or general work style.",
+      "Do not add broad generic phrases such as 'technical support', 'network troubleshooting', 'secure customer environments', 'production troubleshooting', 'customer communication', 'problem solving', 'collaboration', 'documentation', or 'root cause thinking' unless the phrase is a recognized searchable platform/process term and is not better placed in Experience.",
+      "Do not include weak qualifiers such as 'concepts', 'awareness', or 'exposure' as padding. If a keyword is too weak to list plainly, either omit it or prove it carefully in a bullet.",
+      "Do not include every advantage keyword simply because the JD lists it. Select based on credibility, relevance, and human readability.",
+      "If Skills begins to read like a comma-separated paraphrase of the JD, rewrite it before generating the DOCX."
+    ],
+    "allowed_skill_item_types": [
+      "Tools and platforms: Zendesk, JIRA Service Desk Management, Confluence, Postman, Grafana, Apica, Graylog",
+      "Protocols/auth/data formats: REST APIs, SSO/SAML, SSL/TLS, JSON, XML",
+      "Operating systems/environments: Windows Server, Linux, IIS, SQL Server",
+      "Cloud/devops technologies: AWS, Azure, Docker, Kubernetes, OpenTelemetry",
+      "Languages/web technologies: JavaScript, Node.js, Python, Java, PHP, SQL, Git, HTML, CSS, WordPress, WooCommerce"
+    ],
+    "place_in_experience_not_skills": [
+      "root cause analysis",
+      "escalation handling",
+      "bug reproduction",
+      "customer training",
+      "technical documentation",
+      "written and verbal support",
+      "step-by-step troubleshooting",
+      "working under pressure",
+      "collaboration with engineering",
+      "customer empathy",
+      "continuous improvement"
+    ],
+    "pre_final_check": [
+      "Would a recruiter think this Skills section was copied from the JD?",
+      "Are most items concrete tools/platforms/protocols/languages/formats?",
+      "Are generic support responsibilities moved into Experience bullets?",
+      "Can the user defend every listed item in a screen?",
+      "Is the Summary free of Skills-section overflow?"
+    ],
+    "good_example_support_product_role": {
+      "Customer Support Platforms": "Zendesk, JIRA Service Desk Management, Confluence, remote support tools",
+      "APIs & Auth": "REST APIs, Postman, JSON, XML, SSO/SAML, Okta, RBAC, browser developer tools",
+      "Systems & Cloud": "Windows Server, Linux, Active Directory, DNS, SSL/TLS, IIS, SQL Server, AWS, Azure",
+      "Monitoring & DevOps": "Grafana, Apica Synthetic Monitoring, OpenTelemetry, Graylog, Docker, Kubernetes",
+      "Development & Web": "JavaScript, Node.js, Python, Java, PHP, SQL, Git, HTML, CSS, WordPress, WooCommerce, AI-assisted development"
+    },
+    "bad_example_why": "A skills category like 'Product Support & Customer Tools: Tier 2-3 support, escalation handling, root cause analysis, bug reproduction, customer training, technical documentation...' is too responsibility-heavy. Those are experience claims, not Skills items."
   },
   "experience_strategy": {
     "principle": "Experience bullets should prove work history, not paraphrase the JD.",
@@ -131,7 +175,7 @@
     "positioning": "Show that the user does more than resolve tickets: he helps create repeatable support practice through root-cause analysis, documentation, tooling, escalation quality, and customer trust."
   },
   "target_requirement_mapping_strategy": {
-    "principle": "Map target requirements to the user's closest real evidence rather than writing bullets that merely restate the requirement.",
+    "principle": "Map target requirements to the user's closest real evidence rather than writing bullets or Skills entries that merely restate the requirement.",
     "examples": {
       "software_installation_and_configuration": "Apica Windows/Linux monitoring agent installs, Windows Server service configuration, SSL/TLS certificate setup, IIS/Apache/Tomcat/SQL Server deployment troubleshooting, WordPress/WooCommerce plugin configuration.",
       "bug_reproduction_and_escalation": "Internal reproduction of Apica SaaS/on-prem behavior, logs/SQL/Postman/telemetry analysis, JIRA defect documentation for Engineering.",
@@ -150,8 +194,35 @@
     "json_generation": "Generate clean replacements.json that the patcher can apply deterministically.",
     "review_step": "Render-check the DOCX when possible before delivery.",
     "summary_check": "Before finalizing, inspect the Summary separately. If it reads like keyword soup or a second Skills section, rewrite it for human persuasion.",
-    "skills_check": "Ensure Skills is accurate and scannable, without unnecessary duplicate keyword coverage.",
+    "skills_check": "Perform a hard Skills audit before finalizing. Skills must be concrete and defensible, not a copied JD checklist. Move generic responsibilities into bullets or remove them.",
     "bullet_check": "Replace generic or JD-shaped bullets with source-grounded accomplishments.",
-    "fidelity_check": "Confirm the resume still sounds like the user's Master Resume: specific tools, real projects, concrete incidents, and credible wording remain visible."
+    "fidelity_check": "Confirm the resume still sounds like the user's Master Resume: specific tools, real projects, concrete incidents, and credible wording remain visible.",
+    "guardrail_check": "Before generating final replacements.json or DOCX, verify that current role-specific instructions have not overridden anti-keyword-stuffing, summary strategy, source-first tailoring, or master-resume authority."
+  },
+  "instruction_priority": {
+    "principle": "Durable resume preferences are guardrails, not suggestions. User-specific instructions for a single role should be interpreted inside these guardrails unless the user explicitly says to override them.",
+    "priority_order": [
+      "1. Explicit user correction in the current conversation",
+      "2. Hard guardrails in this preferences file",
+      "3. Role-specific user emphasis for the current job",
+      "4. ATS keyword coverage",
+      "5. General resume best practices"
+    ],
+    "interpretation_rule": "When the user asks to 'emphasize heavily' or include specific advantages, do not paste the JD into Skills. Select only the strongest defensible tools/platforms/formats for Skills, then prove broader requirements in Experience bullets using real evidence.",
+    "conflict_rule": "If a role-specific request appears to conflict with anti-keyword-stuffing or source-first tailoring, preserve the guardrail and explain the tradeoff briefly rather than silently violating it."
+  },
+  "tailoring_decision_report": {
+    "required_before_generation": true,
+    "purpose": "Force the AI layer to decide strategy before writing replacements.",
+    "include": [
+      "Role lane and fit tier",
+      "Top 3 reader concerns",
+      "Primary evidence to surface from the Master Resume",
+      "Keywords/tools that belong in Skills",
+      "Requirements that should be proven in Experience instead of Skills",
+      "Items to avoid or downplay",
+      "Any potential overclaim risks"
+    ],
+    "skills_keyword_selection_rule": "For each major JD keyword, decide: Skills, Experience bullet, Summary, or Omit. Default broad responsibilities to Experience or Omit; default concrete technologies to Skills only if defensible."
   }
 }
