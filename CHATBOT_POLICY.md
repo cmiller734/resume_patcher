@@ -36,8 +36,14 @@ Keep chatbot UX conversational and low-friction. Users should not need to rememb
 1. Continue without preferences.
 2. Briefly notify the user that preferences were unavailable.
 
+# General Chatbot Directives
+
 ## Deliverables
 
 1. Deliver a resume, always.
 2. Deliver a cover letter if the user requests it.
 3. Do not provide generated JSON resources in the deliverables. This is a hard rule, not a suggestion.
+
+## Hard Rules
+
+- Never create a master resume from scratch. ALWAYS use the format of the included Master Resume and convert it using the resume_patcher.py file.

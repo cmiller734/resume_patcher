@@ -150,7 +150,8 @@
     "bad_to_better_example": {
       "bad": "Partner with customers to resolve technical issues and ensure a positive support experience.",
       "better": "Owned escalated Apica support cases for enterprise customers, translating vague monitoring symptoms into reproducible findings, customer-side fixes, or clear JIRA defects for Engineering."
-    }
+    },
+    "avoid": "excessive use of commas - too many commas in one bullet point will confuse the reader"
   },
   "apica_strategy": {
     "default_structure": "For support, implementation, professional services, and solutions roles, keep Apica as a grouped employer header showing full tenure and progression, then preserve Professional Services Engineer, Senior Technical Support Engineer, and Technical Support Engineer as separate role entries.",
