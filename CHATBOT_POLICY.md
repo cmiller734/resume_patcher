@@ -40,4 +40,4 @@ Keep chatbot UX conversational and low-friction. Users should not need to rememb
 
 1. Deliver a resume, always.
 2. Deliver a cover letter if the user requests it.
-3. No need to provide generated JSON resources
+3. Do not provide generated JSON resources in the deliverables. This is a hard rule, not a suggestion.
