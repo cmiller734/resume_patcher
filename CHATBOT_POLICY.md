@@ -35,3 +35,9 @@ Keep chatbot UX conversational and low-friction. Users should not need to rememb
 - If `resume_preferences.json` is missing, unreadable, or invalid JSON:
 1. Continue without preferences.
 2. Briefly notify the user that preferences were unavailable.
+
+## Deliverables
+
+1. Deliver a resume, always.
+2. Deliver a cover letter if the user requests it.
+3. No need to provide generated JSON resources

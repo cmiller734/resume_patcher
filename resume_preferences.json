@@ -95,7 +95,8 @@
       "Do not add broad generic phrases such as 'technical support', 'network troubleshooting', 'secure customer environments', 'production troubleshooting', 'customer communication', 'problem solving', 'collaboration', 'documentation', or 'root cause thinking' unless the phrase is a recognized searchable platform/process term and is not better placed in Experience.",
       "Do not include weak qualifiers such as 'concepts', 'awareness', or 'exposure' as padding. If a keyword is too weak to list plainly, either omit it or prove it carefully in a bullet.",
       "Do not include every advantage keyword simply because the JD lists it. Select based on credibility, relevance, and human readability.",
-      "If Skills begins to read like a comma-separated paraphrase of the JD, rewrite it before generating the DOCX."
+      "If Skills begins to read like a comma-separated paraphrase of the JD, rewrite it before generating the DOCX.",
+      "Do not hallucinate skills. If a skill does not exist on the master resume, do not include it in the tailor."
     ],
     "allowed_skill_item_types": [
       "Tools and platforms: Zendesk, JIRA Service Desk Management, Confluence, Postman, Grafana, Apica, Graylog",
