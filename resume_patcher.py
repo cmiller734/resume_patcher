@@ -413,6 +413,13 @@ def _copy_run_format(src_run, dst_run) -> None:
         dst_run._r.insert(0, deepcopy(src_run._r.rPr))
 
 
+def clear_paragraph_content(paragraph: Paragraph) -> None:
+    """Remove all paragraph content while preserving paragraph properties."""
+    for child in list(paragraph._p):
+        if child.tag != qn("w:pPr"):
+            paragraph._p.remove(child)
+
+
 def _template_runs_by_line(template: Paragraph | None) -> list:
     """Return the first visible run on each visual line of a template paragraph."""
     if template is None:
@@ -462,8 +469,7 @@ def set_paragraph_text_keep_format(paragraph: Paragraph, text: str, template: Pa
         else (paragraph.runs[0] if paragraph.runs else None)
     )
 
-    for run in list(paragraph.runs):
-        run._element.getparent().remove(run._element)
+    clear_paragraph_content(paragraph)
 
     parts = text.split("\n")
     previous_run = None
@@ -633,7 +639,12 @@ def validate_cover_letter_input(run: CoverLetterRun) -> list[str]:
     return load_cover_letter_paragraphs(run.json_path)
 
 
-def validate_cover_letter_output_docx(path: Path, expected_paragraphs: Sequence[str]) -> None:
+def validate_cover_letter_output_docx(
+    path: Path,
+    expected_paragraphs: Sequence[str],
+    *,
+    expected_header: Sequence[str] | None = None,
+) -> None:
     ensure_non_empty_file(path, "Cover letter output DOCX")
     try:
         doc = Document(str(path))
@@ -641,9 +652,18 @@ def validate_cover_letter_output_docx(path: Path, expected_paragraphs: Sequence[
         raise ValueError(f"Cover letter output DOCX could not be opened by python-docx: {path}") from exc
 
     actual_paragraphs = [paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()]
-    if actual_paragraphs != list(expected_paragraphs):
+    expected_body = list(expected_paragraphs)
+    if expected_header is not None:
+        expected_header_texts = [text for text in expected_header if text.strip()]
+        if actual_paragraphs[: len(expected_header_texts)] != expected_header_texts:
+            raise ValueError("Cover letter output header did not match the resume header")
+        actual_body = actual_paragraphs[len(expected_header_texts) :]
+    else:
+        actual_body = actual_paragraphs
+
+    if actual_body != expected_body:
         raise ValueError("Cover letter output paragraphs did not match cover_letter.json in order")
-    for idx, paragraph in enumerate(actual_paragraphs):
+    for idx, paragraph in enumerate(actual_body):
         if "--" in paragraph:
             raise ValueError(f"Cover letter output paragraph {idx} contains double hyphen '--'")
         placeholder = COVER_LETTER_PLACEHOLDER_RE.search(paragraph)
@@ -651,7 +671,28 @@ def validate_cover_letter_output_docx(path: Path, expected_paragraphs: Sequence[
             raise ValueError(f"Cover letter output paragraph {idx} contains unreplaced placeholder {placeholder.group(0)!r}")
 
 
-def render_cover_letter_docx(run: CoverLetterRun, paragraphs: Sequence[str]) -> None:
+def resume_header_templates(resume_doc: Document) -> list[Paragraph]:
+    templates: list[Paragraph] = []
+    for paragraph in resume_doc.paragraphs:
+        if paragraph.text.strip() and paragraph_looks_like_section_heading(paragraph):
+            break
+        templates.append(Paragraph(deepcopy(paragraph._p), paragraph._parent))
+
+    while templates and not templates[-1].text.strip():
+        templates.pop()
+    if not templates:
+        raise ValueError("Master resume does not contain a body header before the first section heading")
+    return templates
+
+
+def cover_letter_body_template(doc: Document) -> Paragraph:
+    for paragraph in doc.paragraphs[1:]:
+        if paragraph.text.strip():
+            return Paragraph(deepcopy(paragraph._p), paragraph._parent)
+    return Paragraph(deepcopy(first_non_empty_paragraph(doc)._p), doc.paragraphs[0]._parent)
+
+
+def render_cover_letter_docx(run: CoverLetterRun, paragraphs: Sequence[str], resume_src: Path | None = None) -> None:
     try:
         doc = Document(str(run.docx_path))
     except Exception as exc:
@@ -659,22 +700,43 @@ def render_cover_letter_docx(run: CoverLetterRun, paragraphs: Sequence[str]) -> 
     if not doc.paragraphs:
         raise ValueError("Cover letter DOCX contains no body paragraphs to use as a formatting template")
 
-    template_source = next((paragraph for paragraph in doc.paragraphs if paragraph.text.strip()), doc.paragraphs[0])
-    template = Paragraph(deepcopy(template_source._p), template_source._parent)
+    header_templates: list[Paragraph] = []
+    if resume_src is not None:
+        try:
+            resume_doc = Document(str(resume_src))
+        except Exception as exc:
+            raise ValueError(f"Master resume DOCX could not be opened for cover letter header sync: {resume_src}") from exc
+        header_templates = resume_header_templates(resume_doc)
+
+    template = cover_letter_body_template(doc)
     first = doc.paragraphs[0]
 
     for paragraph in list(doc.paragraphs[1:]):
         delete_paragraph(paragraph)
 
-    copy_paragraph_properties(first, template)
-    set_paragraph_text_keep_format(first, paragraphs[0], template)
     cursor = first
-    for text in paragraphs[1:]:
+    if header_templates:
+        copy_paragraph_properties(first, header_templates[0])
+        set_paragraph_text_keep_format(first, header_templates[0].text, header_templates[0])
+        cursor = first
+        for header_template in header_templates[1:]:
+            cursor = insert_paragraph_after(cursor, header_template.text, header_template)
+        cursor = insert_paragraph_after(cursor, "", template)
+    else:
+        copy_paragraph_properties(first, template)
+        set_paragraph_text_keep_format(first, paragraphs[0], template)
+
+    body_paragraphs = paragraphs if header_templates else paragraphs[1:]
+    for text in body_paragraphs:
         cursor = insert_paragraph_after(cursor, text, template)
 
     run.output_path.parent.mkdir(parents=True, exist_ok=True)
     doc.save(str(run.output_path))
-    validate_cover_letter_output_docx(run.output_path, paragraphs)
+    validate_cover_letter_output_docx(
+        run.output_path,
+        paragraphs,
+        expected_header=[template.text for template in header_templates] if header_templates else None,
+    )
 
 
 def find_para_index(doc: Document, exact_text: str) -> int:
@@ -1505,7 +1567,7 @@ def main() -> None:
             cover_letter_paragraphs = validate_cover_letter_input(cover_letter_run)
         applied_counts = run_patch(src, replacements_path, out)
         if cover_letter_run is not None:
-            render_cover_letter_docx(cover_letter_run, cover_letter_paragraphs)
+            render_cover_letter_docx(cover_letter_run, cover_letter_paragraphs, src)
     finally:
         if package_temp is not None:
             package_temp.cleanup()

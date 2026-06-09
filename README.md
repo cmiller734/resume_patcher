@@ -44,7 +44,7 @@ This workflow intentionally separates responsibilities:
 - Applies deterministic document conversion updates to the `.docx`.
 - Preserves paragraph/run formatting and layout style.
 - Outputs a final tailored `.docx`.
-- Optionally opens `Caleb Miller Cover Letter.docx`, discards existing body text, writes the generated `cover_letter.json` paragraphs, and validates the output DOCX.
+- Optionally opens `Caleb Miller Cover Letter.docx`, syncs the top header/contact block from the master resume, discards existing body text, writes the generated `cover_letter.json` paragraphs, and validates the output DOCX.
 
 This separation keeps generation flexible and context-aware while keeping document transformation repeatable.
 
@@ -67,7 +67,7 @@ This separation keeps generation flexible and context-aware while keeping docume
 - Preserves style by cloning paragraph/run formatting from template paragraphs in the source document.
 - Handles multi-line paragraph formatting (for header/title + date/location line breaks).
 - Writes the result to a new output `.docx` path.
-- Renders final cover letter paragraphs from `cover_letter.json` without using old cover letter prose as content guidance.
+- Renders final cover letter paragraphs from `cover_letter.json` without using old cover letter prose as content guidance, while copying the master resume's top header/contact block into the cover letter.
 
 It should remain a conversion tool only. It should not enforce resume writing rules, tone, strategy, bullet-count policy, or ATS/recruiter optimization logic.
 

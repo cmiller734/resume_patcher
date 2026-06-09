@@ -52,6 +52,17 @@ def non_empty_paragraph_texts(path: Path) -> list[str]:
     return [paragraph.text for paragraph in doc.paragraphs if paragraph.text.strip()]
 
 
+def resume_header_texts(path: Path = REPO_ROOT / MASTER_RESUME) -> list[str]:
+    doc = Document(str(path))
+    texts: list[str] = []
+    for paragraph in doc.paragraphs:
+        if paragraph.text.strip() and paragraph.style is not None and paragraph.style.name.lower() == "heading 1":
+            break
+        if paragraph.text.strip():
+            texts.append(paragraph.text)
+    return texts
+
+
 def assert_valid_direct_cover_letter(tmp_path: Path) -> None:
     cover_src = tmp_path / COVER_LETTER
     cover_out = tmp_path / "tailored_cover.docx"
@@ -89,7 +100,10 @@ def assert_valid_direct_cover_letter(tmp_path: Path) -> None:
         raise AssertionError(f"cover letter direct render failed:\n{result.stdout}\n{result.stderr}")
 
     actual = non_empty_paragraph_texts(cover_out)
-    if actual != paragraphs:
+    expected_header = resume_header_texts()
+    if actual[: len(expected_header)] != expected_header:
+        raise AssertionError(f"cover letter header did not match resume header: {actual[:len(expected_header)]!r}")
+    if actual[len(expected_header) :] != paragraphs:
         raise AssertionError(f"cover letter paragraphs were not rendered in order: {actual!r}")
     combined = "\n".join(actual)
     if "Legacy Company" in combined:
@@ -220,11 +234,15 @@ def assert_package_cover_output_persists(tmp_path: Path) -> None:
     if result.returncode != 0:
         raise AssertionError(f"package cover letter render failed:\n{result.stdout}\n{result.stderr}")
     actual = non_empty_paragraph_texts(cover_out)
-    if actual != [
+    expected_header = resume_header_texts()
+    expected_body = [
         "Dear Hiring Team,",
         "Package mode writes this cover letter outside temp extraction.",
         "Sincerely\nCaleb Miller",
-    ]:
+    ]
+    if actual[: len(expected_header)] != expected_header:
+        raise AssertionError(f"package cover header did not match resume header: {actual[:len(expected_header)]!r}")
+    if actual[len(expected_header) :] != expected_body:
         raise AssertionError(f"package cover output text mismatch: {actual!r}")
 
 
