@@ -197,6 +197,8 @@ Example:
 
 The legacy key `replacement_paragraphs` is still supported; `content` is accepted as an alias for block replacement items. Existing files that use only `normal` and `bullet` continue to work, but `normal` now resolves to a safe non-heading template instead of cloning the replaced block's first paragraph.
 
+When replacing `Work EXPERIENCE`, generated semantic experience items receive readable paragraph spacing after each `company_heading` item group so adjacent jobs do not run together.
+
 ## Structured Skills Replacements
 
 `skills` may be provided as a preformatted string, an object mapping categories to item strings/lists, or a structured list:

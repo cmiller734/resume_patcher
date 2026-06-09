@@ -31,6 +31,14 @@ def paragraph_has_numbering(paragraph: ET.Element) -> bool:
     return paragraph.find("./w:pPr/w:numPr", NS) is not None
 
 
+def paragraph_space_after(paragraph: ET.Element) -> int:
+    spacing = paragraph.find("./w:pPr/w:spacing", NS)
+    if spacing is None:
+        return 0
+    raw = spacing.attrib.get(f"{{{W}}}after")
+    return int(raw) if raw is not None else 0
+
+
 def paragraph_runs(paragraph: ET.Element) -> list[ET.Element]:
     return paragraph.findall(".//w:r", NS)
 
@@ -185,6 +193,16 @@ def main() -> None:
                         "text": "Verified that inserted bullets keep list formatting instead of becoming headings.",
                         "style": "bullet",
                     },
+                    {
+                        "text": "Second Regression Company | Application Operations",
+                        "style": "company_heading",
+                    },
+                    {"text": "Application Support Engineer", "style": "role_heading"},
+                    {"text": "Remote | Jan. 2023 - Feb. 2024", "style": "date_location"},
+                    {
+                        "text": "Verified that generated experience items keep readable spacing after each item.",
+                        "style": "bullet",
+                    },
                 ],
             }
         ]
@@ -256,6 +274,20 @@ def main() -> None:
         )
         source_bullet = find_bullet_template(source_paragraphs, source_style_names)
         assert_runs_match_format(bullet, "bullet", first_visible_run_format(source_bullet))
+
+        second_bullet = find_paragraph(
+            paragraphs,
+            "Verified that generated experience items keep readable spacing after each item.",
+        )
+        expected_spacing_after = 120
+        if paragraph_space_after(bullet) < expected_spacing_after:
+            raise AssertionError(
+                f"first generated experience item did not keep trailing spacing: {paragraph_space_after(bullet)}"
+            )
+        if paragraph_space_after(second_bullet) < expected_spacing_after:
+            raise AssertionError(
+                f"final generated experience item did not keep trailing spacing: {paragraph_space_after(second_bullet)}"
+            )
 
         skills = find_paragraph(
             paragraphs,

@@ -22,7 +22,7 @@ from typing import Any, Sequence
 from docx import Document
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
-from docx.shared import Inches
+from docx.shared import Inches, Pt
 from docx.text.paragraph import Paragraph
 
 
@@ -48,6 +48,8 @@ SUPPORTED_STYLE_SOURCES = {
     "keep",
 }
 NON_SECTION_STYLE_SOURCES = {"normal", "role_heading", "company_heading", "date_location"}
+EXPERIENCE_ITEM_START_STYLES = {"company_heading"}
+EXPERIENCE_ITEM_TRAILING_SPACE = Pt(6)
 CANONICAL_MASTER_RESUME_NAME = "Caleb Miller Master Resume.docx"
 CANONICAL_COVER_LETTER_NAME = "Caleb Miller Cover Letter.docx"
 FORBIDDEN_BASE_RESUME_FILENAMES = {
@@ -698,6 +700,7 @@ def replace_block(
     items: Sequence[PatchPara],
     *,
     style_templates: dict[str, Paragraph],
+    add_experience_item_spacing: bool = False,
 ) -> None:
     """Replace a paragraph block [start_idx, end_idx_exclusive) with items."""
     if not items:
@@ -745,8 +748,11 @@ def replace_block(
             template = safe_normal_template()
         return template
 
+    inserted: list[tuple[Paragraph, str]] = []
+
     first.style = make_template(items[0].style_source, first).style
     set_paragraph_text_keep_format(first, items[0].text, make_template(items[0].style_source, first))
+    inserted.append((first, items[0].style_source))
 
     while first._p.getnext() is not None and first._p.getnext() is not end_anchor:
         delete_paragraph(Paragraph(first._p.getnext(), first._parent))
@@ -754,6 +760,26 @@ def replace_block(
     cursor = first
     for item in items[1:]:
         cursor = insert_paragraph_after(cursor, item.text, make_template(item.style_source))
+        inserted.append((cursor, item.style_source))
+
+    if add_experience_item_spacing:
+        apply_experience_item_spacing(inserted)
+
+
+def apply_experience_item_spacing(inserted: Sequence[tuple[Paragraph, str]]) -> None:
+    """Add readable spacing after each generated Work Experience item."""
+    if not inserted:
+        return
+
+    for idx, (paragraph, style_source) in enumerate(inserted):
+        if style_source == "section_heading" or not paragraph.text.strip():
+            continue
+
+        next_style = inserted[idx + 1][1] if idx + 1 < len(inserted) else None
+        is_before_next_item = next_style in EXPERIENCE_ITEM_START_STYLES
+        is_final_item = next_style is None
+        if is_before_next_item or is_final_item:
+            paragraph.paragraph_format.space_after = EXPERIENCE_ITEM_TRAILING_SPACE
 
 
 def paragraph_is_bullet(paragraph: Paragraph) -> bool:
@@ -1255,6 +1281,7 @@ def apply_block_items(
     items: list[PatchPara],
     context: str,
     style_templates: dict[str, Paragraph],
+    add_experience_item_spacing: bool = False,
 ) -> bool:
     if not items:
         warn(f"{context} had no replacement_paragraphs after parsing; skipping")
@@ -1277,6 +1304,7 @@ def apply_block_items(
         end_idx,
         items,
         style_templates=style_templates,
+        add_experience_item_spacing=add_experience_item_spacing,
     )
     return True
 
@@ -1348,7 +1376,16 @@ def apply_named_blocks(
                 warn(f"{context} could not infer an end boundary; provide 'end_heading' to disambiguate")
                 continue
 
-        if apply_block_items(doc, start_idx, end_idx, items, context, style_templates):
+        add_experience_item_spacing = normalized_doc_text(start_heading) == "WORK EXPERIENCE"
+        if apply_block_items(
+            doc,
+            start_idx,
+            end_idx,
+            items,
+            context,
+            style_templates,
+            add_experience_item_spacing=add_experience_item_spacing,
+        ):
             applied += 1
 
     return applied

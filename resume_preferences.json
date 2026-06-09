@@ -137,7 +137,13 @@
   "experience_strategy": {
     "principle": "Experience bullets should prove work history, not paraphrase the JD.",
     "guidance": [
-      "Do not change role names unless there is a clear similarity between the role name I performed and the role I am applying for - e.g. you may change Technical Support Engineer to Customer Support Engineer and perform similar changes",
+      "Preserve official role titles by default. Do not rewrite role titles for marketing, positioning, keyword matching, or perceived fit.",
+      "A role title may only be changed when the new title is a truthful, conventional equivalent of the original title and does not materially change the role's identity, seniority, scope, or employment context. This exception is intended for small title-normalization changes only.",
+      "Acceptable role-title normalization examples: Technical Support Engineer → Customer Support Engineer; Technical Support Engineer → Application Support Engineer; Technical Support Specialist → Customer Support Specialist.",
+      "Unacceptable role-title rewrites: Web Developer & Support Engineer → Technical Customer Solutions & Web Application Support; WordPress Developer & Systems Architect → Solutions Engineer; Professional Services Engineer → Customer Success Engineer; any freelance, contract, or agency title rewritten into a hybridized customer-success, solutions, or consulting title unless that was the actual title held.",
+      "For Apica roles, allow narrow support-title normalization when the target role clearly uses customer-support language and the underlying responsibilities substantially match. For example, Technical Support Engineer may become Customer Support Engineer for a Customer Success Engineer or Customer Support Engineer application. However, do not rename Senior Technical Support Engineer or Professional Services Engineer unless the change is an equally conventional equivalent and preserves seniority and function.",
+      "When in doubt, keep the original title exactly and tailor only the summary, skills, and bullet content beneath it.",
+      "Role titles are evidence, not positioning copy.",
       "Start from the Master Resume's real accomplishments, tools, systems, customers, incidents, and outcomes.",
       "Use target-job keywords only when attached to real evidence.",
       "Prefer one clear action per bullet over stacked abstract responsibilities.",
