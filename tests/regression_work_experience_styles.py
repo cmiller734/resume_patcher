@@ -59,6 +59,23 @@ def run_format(run: ET.Element) -> tuple[bool | None, bool | None]:
     return run_bool(run, "b"), run_bool(run, "i")
 
 
+def run_size(run: ET.Element) -> int | None:
+    element = run.find("./w:rPr/w:sz", NS)
+    if element is None:
+        return None
+    value = element.attrib.get(f"{{{W}}}val")
+    return int(value) if value is not None else None
+
+
+def first_visible_run_size(paragraph: ET.Element, line_idx: int = 0) -> int | None:
+    lines = paragraph_line_runs(paragraph)
+    candidates = lines[min(line_idx, len(lines) - 1)] if lines else []
+    for run in candidates:
+        if run_text(run).strip():
+            return run_size(run)
+    raise AssertionError(f"No visible run found on line {line_idx} of {paragraph_text(paragraph)!r}")
+
+
 def paragraph_line_runs(paragraph: ET.Element) -> list[list[ET.Element]]:
     lines: list[list[ET.Element]] = [[]]
     for run in paragraph_runs(paragraph):
@@ -197,8 +214,7 @@ def main() -> None:
                         "text": "Second Regression Company | Application Operations",
                         "style": "company_heading",
                     },
-                    {"text": "Application Support Engineer", "style": "role_heading"},
-                    {"text": "Remote | Jan. 2023 - Feb. 2024", "style": "date_location"},
+                    {"text": "Application Support Engineer\nRemote | Jan. 2023 - Feb. 2024", "style": "role_heading"},
                     {
                         "text": "Verified that generated experience items keep readable spacing after each item.",
                         "style": "bullet",
@@ -248,7 +264,9 @@ def main() -> None:
         )
         expected_header_style = paragraph_style_id(source_role_date)
         expected_role_format = first_visible_run_format(source_role_date, 0)
-        expected_date_format = first_visible_run_format(source_role_date, 1)
+        expected_date_format = (None, True)
+        expected_role_size = first_visible_run_size(source_role_date, 0)
+        expected_date_size = first_visible_run_size(source_role_date, 1)
 
         role_heading = find_paragraph(paragraphs, "Professional Services Engineer")
         date_location = find_paragraph(paragraphs, "Remote | Mar. 2024 - Feb. 2025")
@@ -256,9 +274,26 @@ def main() -> None:
         assert_runs_match_format(role_heading, "role heading", expected_role_format)
         assert_style(date_location, style_names, expected_header_style, "date/location")
         assert_runs_match_format(date_location, "date/location", expected_date_format)
+        if first_visible_run_size(role_heading) != expected_role_size:
+            raise AssertionError(f"role heading size changed: {first_visible_run_size(role_heading)} != {expected_role_size}")
+        if first_visible_run_size(date_location) != expected_date_size:
+            raise AssertionError(f"date/location size changed: {first_visible_run_size(date_location)} != {expected_date_size}")
 
         assert_not_heading_1(role_heading, style_names, "role heading")
         assert_not_heading_1(date_location, style_names, "date/location")
+
+        split_role_heading = find_paragraph(paragraphs, "Application Support Engineer")
+        split_date_location = find_paragraph(paragraphs, "Remote | Jan. 2023 - Feb. 2024")
+        assert_runs_match_format(split_role_heading, "split role heading", expected_role_format)
+        assert_runs_match_format(split_date_location, "split date/location", expected_date_format)
+        if first_visible_run_size(split_role_heading) != expected_role_size:
+            raise AssertionError(
+                f"split role heading size changed: {first_visible_run_size(split_role_heading)} != {expected_role_size}"
+            )
+        if first_visible_run_size(split_date_location) != expected_date_size:
+            raise AssertionError(
+                f"split date/location size changed: {first_visible_run_size(split_date_location)} != {expected_date_size}"
+            )
 
         company_heading = find_paragraph(paragraphs, "Regression Company | Enterprise SaaS Application Support")
         assert_not_heading_1(company_heading, style_names, "company heading")

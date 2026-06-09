@@ -413,6 +413,38 @@ def _copy_run_format(src_run, dst_run) -> None:
         dst_run._r.insert(0, deepcopy(src_run._r.rPr))
 
 
+def _style_font_value(style, attr: str):
+    while style is not None:
+        value = getattr(style.font, attr)
+        if value is not None:
+            return value
+        style = style.base_style
+    return None
+
+
+def _apply_inherited_run_format(template: Paragraph | None, dst_run) -> None:
+    if template is None or template.style is None:
+        return
+
+    font = dst_run.font
+    if font.name is None:
+        inherited_name = _style_font_value(template.style, "name")
+        if inherited_name is not None:
+            font.name = inherited_name
+    if font.size is None:
+        inherited_size = _style_font_value(template.style, "size")
+        if inherited_size is not None:
+            font.size = inherited_size
+    if dst_run.bold is None:
+        inherited_bold = _style_font_value(template.style, "bold")
+        if inherited_bold is not None:
+            dst_run.bold = inherited_bold
+    if dst_run.italic is None:
+        inherited_italic = _style_font_value(template.style, "italic")
+        if inherited_italic is not None:
+            dst_run.italic = inherited_italic
+
+
 def clear_paragraph_content(paragraph: Paragraph) -> None:
     """Remove all paragraph content while preserving paragraph properties."""
     for child in list(paragraph._p):
@@ -480,6 +512,7 @@ def set_paragraph_text_keep_format(paragraph: Paragraph, text: str, template: Pa
         run = paragraph.add_run(part)
         src_run = line_format_runs[i] if i < len(line_format_runs) and line_format_runs[i] is not None else fallback_run
         _copy_run_format(src_run, run)
+        _apply_inherited_run_format(template, run)
         previous_run = run
 
 
@@ -685,6 +718,34 @@ def resume_header_templates(resume_doc: Document) -> list[Paragraph]:
     return templates
 
 
+def style_by_id(doc: Document, style_id: str):
+    for style in doc.styles:
+        if getattr(style, "style_id", None) == style_id:
+            return style
+    return None
+
+
+def sync_header_style_fonts(source_doc: Document, destination_doc: Document, header_templates: Sequence[Paragraph]) -> None:
+    for template in header_templates:
+        source_style = template.style
+        if source_style is None:
+            continue
+
+        destination_style = style_by_id(destination_doc, source_style.style_id)
+        if destination_style is None:
+            continue
+
+        source_font = source_style.font
+        destination_font = destination_style.font
+        destination_font.name = source_font.name
+        destination_font.size = source_font.size
+        destination_font.bold = source_font.bold
+        destination_font.italic = source_font.italic
+        destination_font.underline = source_font.underline
+        if source_font.color.rgb is not None:
+            destination_font.color.rgb = source_font.color.rgb
+
+
 def cover_letter_body_template(doc: Document) -> Paragraph:
     for paragraph in doc.paragraphs[1:]:
         if paragraph.text.strip():
@@ -707,6 +768,7 @@ def render_cover_letter_docx(run: CoverLetterRun, paragraphs: Sequence[str], res
         except Exception as exc:
             raise ValueError(f"Master resume DOCX could not be opened for cover letter header sync: {resume_src}") from exc
         header_templates = resume_header_templates(resume_doc)
+        sync_header_style_fonts(resume_doc, doc, header_templates)
 
     template = cover_letter_body_template(doc)
     first = doc.paragraphs[0]
@@ -716,12 +778,14 @@ def render_cover_letter_docx(run: CoverLetterRun, paragraphs: Sequence[str], res
 
     cursor = first
     if header_templates:
-        copy_paragraph_properties(first, header_templates[0])
-        set_paragraph_text_keep_format(first, header_templates[0].text, header_templates[0])
+        for header_template in header_templates:
+            new_p = deepcopy(header_template._p)
+            first._p.addprevious(new_p)
+            cursor = Paragraph(new_p, first._parent)
+
+        copy_paragraph_properties(first, template)
+        clear_paragraph_content(first)
         cursor = first
-        for header_template in header_templates[1:]:
-            cursor = insert_paragraph_after(cursor, header_template.text, header_template)
-        cursor = insert_paragraph_after(cursor, "", template)
     else:
         copy_paragraph_properties(first, template)
         set_paragraph_text_keep_format(first, paragraphs[0], template)
@@ -1103,6 +1167,25 @@ def parse_patch_paragraphs(raw_items: Any, context: str) -> list[PatchPara]:
     return parsed
 
 
+def normalize_experience_patch_items(items: Sequence[PatchPara]) -> list[PatchPara]:
+    normalized: list[PatchPara] = []
+    for item in items:
+        if item.style_source != "role_heading":
+            normalized.append(item)
+            continue
+
+        lines = [line.strip() for line in item.text.splitlines() if line.strip()]
+        if len(lines) < 2 or not text_looks_like_date_location(lines[1]):
+            normalized.append(item)
+            continue
+
+        normalized.append(PatchPara(text=lines[0], style_source="role_heading"))
+        normalized.append(PatchPara(text=lines[1], style_source="date_location"))
+        for extra in lines[2:]:
+            normalized.append(PatchPara(text=extra, style_source="normal"))
+    return normalized
+
+
 def apply_paragraph_replacements(doc: Document, replacements: Any) -> int:
     if not replacements:
         return 0
@@ -1439,6 +1522,9 @@ def apply_named_blocks(
                 continue
 
         add_experience_item_spacing = normalized_doc_text(start_heading) == "WORK EXPERIENCE"
+        if add_experience_item_spacing:
+            items = normalize_experience_patch_items(items)
+
         if apply_block_items(
             doc,
             start_idx,

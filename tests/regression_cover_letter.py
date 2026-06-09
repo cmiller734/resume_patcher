@@ -63,6 +63,33 @@ def resume_header_texts(path: Path = REPO_ROOT / MASTER_RESUME) -> list[str]:
     return texts
 
 
+def style_font_signature(doc: Document, style_name: str) -> tuple[str | None, int | None, bool | None]:
+    font = doc.styles[style_name].font
+    return font.name, int(font.size) if font.size is not None else None, font.bold
+
+
+def assert_cover_header_matches_resume(cover_path: Path, resume_path: Path = REPO_ROOT / MASTER_RESUME) -> list[str]:
+    resume_doc = Document(str(resume_path))
+    cover_doc = Document(str(cover_path))
+    expected_header = resume_header_texts(resume_path)
+    actual = [paragraph.text for paragraph in cover_doc.paragraphs if paragraph.text.strip()]
+    if actual[: len(expected_header)] != expected_header:
+        raise AssertionError(f"cover letter header did not match resume header: {actual[:len(expected_header)]!r}")
+
+    for style_name in ("Title", "Subtitle"):
+        expected_style = style_font_signature(resume_doc, style_name)
+        actual_style = style_font_signature(cover_doc, style_name)
+        if actual_style != expected_style:
+            raise AssertionError(f"{style_name} style did not sync from resume: {actual_style!r} != {expected_style!r}")
+
+    resume_subtitle_runs = [run.text for run in resume_doc.paragraphs[1].runs]
+    cover_subtitle_runs = [run.text for run in cover_doc.paragraphs[1].runs]
+    if cover_subtitle_runs != resume_subtitle_runs:
+        raise AssertionError(f"cover subtitle run order changed: {cover_subtitle_runs!r} != {resume_subtitle_runs!r}")
+
+    return actual
+
+
 def assert_valid_direct_cover_letter(tmp_path: Path) -> None:
     cover_src = tmp_path / COVER_LETTER
     cover_out = tmp_path / "tailored_cover.docx"
@@ -99,10 +126,8 @@ def assert_valid_direct_cover_letter(tmp_path: Path) -> None:
     if result.returncode != 0:
         raise AssertionError(f"cover letter direct render failed:\n{result.stdout}\n{result.stderr}")
 
-    actual = non_empty_paragraph_texts(cover_out)
     expected_header = resume_header_texts()
-    if actual[: len(expected_header)] != expected_header:
-        raise AssertionError(f"cover letter header did not match resume header: {actual[:len(expected_header)]!r}")
+    actual = assert_cover_header_matches_resume(cover_out)
     if actual[len(expected_header) :] != paragraphs:
         raise AssertionError(f"cover letter paragraphs were not rendered in order: {actual!r}")
     combined = "\n".join(actual)
@@ -233,15 +258,13 @@ def assert_package_cover_output_persists(tmp_path: Path) -> None:
     result = run_patcher(["--package", str(zip_path)])
     if result.returncode != 0:
         raise AssertionError(f"package cover letter render failed:\n{result.stdout}\n{result.stderr}")
-    actual = non_empty_paragraph_texts(cover_out)
     expected_header = resume_header_texts()
+    actual = assert_cover_header_matches_resume(cover_out)
     expected_body = [
         "Dear Hiring Team,",
         "Package mode writes this cover letter outside temp extraction.",
         "Sincerely\nCaleb Miller",
     ]
-    if actual[: len(expected_header)] != expected_header:
-        raise AssertionError(f"package cover header did not match resume header: {actual[:len(expected_header)]!r}")
     if actual[len(expected_header) :] != expected_body:
         raise AssertionError(f"package cover output text mismatch: {actual!r}")
 
